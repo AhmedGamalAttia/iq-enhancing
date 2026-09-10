@@ -153,13 +153,23 @@ export default function PracticePage() {
         )}
       </header>
 
-      <Card className="mb-6 flex items-center justify-between gap-3 p-4">
+      <Card className="mb-3 flex items-center justify-between gap-3 p-4">
         <div>
           <p className="font-bold">🧠 {t.nback.title}</p>
           <p className="text-xs text-fg-faint">{t.nback.cardHint}</p>
         </div>
         <ButtonLink href="/nback" variant="outline" size="sm">
           {t.nback.start}
+        </ButtonLink>
+      </Card>
+
+      <Card className="mb-6 flex items-center justify-between gap-3 p-4">
+        <div>
+          <p className="font-bold">◈ {t.abstract.title}</p>
+          <p className="text-xs text-fg-faint">{t.abstract.cardHint}</p>
+        </div>
+        <ButtonLink href="/abstract" variant="outline" size="sm">
+          {t.abstract.start}
         </ButtonLink>
       </Card>
 

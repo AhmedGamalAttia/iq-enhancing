@@ -165,6 +165,27 @@ export interface Messages {
     bestLabel: (n: number) => string;
     cardHint: string;
   };
+  abstract: {
+    title: string;
+    cardHint: string;
+    intro: string;
+    patternsNote: string;
+    instrSequence: string;
+    instrMatrix: string;
+    instrOddone: string;
+    start: string;
+    levelNow: (score: number) => string;
+    progress: (i: number, total: number) => string;
+    correct: string;
+    incorrect: string;
+    next: string;
+    finish: string;
+    doneTitle: string;
+    estimatedLevel: string;
+    accuracy: (c: number, t: number) => string;
+    again: string;
+    toPractice: string;
+  };
   bands: {
     advanced: string;
     veryGood: string;
@@ -358,6 +379,27 @@ const ar: Messages = {
     toPractice: "رجوع للتدريب",
     bestLabel: (n) => `أفضل نتيجة (${n}-back)`,
     cardHint: "تمرين تفاعلي بمؤقّت لتقوية الذاكرة العاملة",
+  },
+  abstract: {
+    title: "الاستدلال المجرّد",
+    cardHint: "أنماط بصرية عادلة للجميع — بلا لغة ولا ثقافة، وتتكيّف مع مستواك",
+    intro: "أنماط بصرية مولّدة تلقائياً — بلا لغة ولا معلومات مسبقة، فتناسب أي عمر أو خلفية. اكتشف القاعدة واختر الإجابة.",
+    patternsNote: "٣ أنماط: إكمال التسلسل، إكمال الشبكة، واكتشاف الشاذ.",
+    instrSequence: "اختر ما يُكمل التسلسل:",
+    instrMatrix: "اختر ما يُكمل الشبكة:",
+    instrOddone: "اكتشف الشكل الشاذ:",
+    start: "ابدأ",
+    levelNow: (s) => `مستواك الآن: ${s}`,
+    progress: (i, total) => `${i} / ${total}`,
+    correct: "✅ إجابة صحيحة",
+    incorrect: "❌ إجابة غير صحيحة",
+    next: "التالي ←",
+    finish: "إنهاء",
+    doneTitle: "انتهت الجلسة",
+    estimatedLevel: "مستواك المُقدَّر",
+    accuracy: (c, t) => `أجبت صح على ${c} من ${t}`,
+    again: "مرة أخرى",
+    toPractice: "رجوع للتدريب",
   },
   bands: {
     advanced: "متقدّم",
@@ -578,6 +620,27 @@ const en: Messages = {
     toPractice: "Back to practice",
     bestLabel: (n) => `Best (${n}-back)`,
     cardHint: "A timed interactive task to strengthen working memory",
+  },
+  abstract: {
+    title: "Abstract Reasoning",
+    cardHint: "Fair visual patterns for everyone — no language or culture, adapts to your level",
+    intro: "Procedurally generated visual patterns — no language or prior knowledge, so they suit any age or background. Spot the rule and pick the answer.",
+    patternsNote: "3 patterns: complete the sequence, complete the grid, and find the odd one out.",
+    instrSequence: "Pick what completes the sequence:",
+    instrMatrix: "Pick what completes the grid:",
+    instrOddone: "Find the odd one out:",
+    start: "Start",
+    levelNow: (s) => `Your level now: ${s}`,
+    progress: (i, total) => `${i} / ${total}`,
+    correct: "✅ Correct",
+    incorrect: "❌ Incorrect",
+    next: "Next →",
+    finish: "Finish",
+    doneTitle: "Session complete",
+    estimatedLevel: "Your estimated level",
+    accuracy: (c, t) => `You answered ${c} of ${t} correctly`,
+    again: "Play again",
+    toPractice: "Back to practice",
   },
   bands: {
     advanced: "Advanced",
