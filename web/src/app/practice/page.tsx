@@ -13,6 +13,7 @@ import {
 import { hasDoneTodayDaily } from "@/lib/daily";
 import { isDue, newCardRecord, reviewCard } from "@/lib/fsrs";
 import { useI18n } from "@/i18n/context";
+import { track } from "@/lib/analytics";
 import { QuestionCard } from "@/components/question-card";
 import { Badge, Button, ButtonLink, Card } from "@/components/ui";
 
@@ -83,7 +84,12 @@ export default function PracticePage() {
       return a.difficulty - b.difficulty;
     });
 
-    const session = [...due, ...fresh].slice(0, SESSION_TARGET);
+    track("practice_start", locale);
+    const session = interleaveBySkill(
+      [...due, ...fresh],
+      weakFirst,
+      SESSION_TARGET,
+    );
     queueRef.current = session;
     setQueue(session);
     setPos(0);
@@ -108,6 +114,7 @@ export default function PracticePage() {
 
     const nextPos = pos + 1;
     if (nextPos >= queueRef.current.length) {
+      track("practice_finish", locale);
       setPhase("done");
     } else {
       setPos(nextPos);
@@ -294,6 +301,43 @@ export default function PracticePage() {
       )}
     </div>
   );
+}
+
+/**
+ * Build the session by taking a turn from each skill in turn, weakest first.
+ *
+ * Sorting alone put every item of one skill together: after a diagnostic where
+ * numeracy came out lowest, the whole eight-item session was numeracy. Besides
+ * being monotonous that is the wrong shape of practice — interleaving different
+ * problem types produces better retention and transfer than blocking one type,
+ * even though blocked practice feels easier at the time.
+ */
+function interleaveBySkill(
+  pool: Question[],
+  weakFirst: SkillKey[],
+  limit: number,
+): Question[] {
+  const queues = new Map<SkillKey, Question[]>();
+  for (const q of pool) {
+    const list = queues.get(q.skill) ?? [];
+    list.push(q);
+    queues.set(q.skill, list);
+  }
+  // Weakest skill first within each round, so it still gets the most attention.
+  const order = weakFirst.filter((s) => queues.has(s));
+  const out: Question[] = [];
+  while (out.length < limit) {
+    let took = false;
+    for (const skill of order) {
+      const list = queues.get(skill);
+      if (!list?.length) continue;
+      out.push(list.shift()!);
+      took = true;
+      if (out.length >= limit) break;
+    }
+    if (!took) break; // pool exhausted
+  }
+  return out;
 }
 
 function weakestSkillOrder(

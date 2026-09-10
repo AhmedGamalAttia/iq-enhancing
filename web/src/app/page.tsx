@@ -1,13 +1,17 @@
 "use client";
 
 import { SKILL_LIST } from "@/data/skills";
+import { useEffect } from "react";
 import { useI18n } from "@/i18n/context";
+import { track } from "@/lib/analytics";
 import { HonestyNote } from "@/components/honesty-note";
 import { Badge, ButtonLink, Card } from "@/components/ui";
 
 export default function Home() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const h = t.home;
+
+  useEffect(() => track("home_view", locale), [locale]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 md:px-6">
@@ -118,9 +122,6 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="border-t border-border-soft py-8 text-center text-sm text-fg-faint">
-        {h.footer}
-      </footer>
     </div>
   );
 }

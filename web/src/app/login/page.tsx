@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { migrateLocalToAccount } from "@/lib/data";
 import { isSupabaseConfigured } from "@/lib/env";
 import { useI18n } from "@/i18n/context";
+import { track } from "@/lib/analytics";
 import { Button, Card } from "@/components/ui";
 
 export default function LoginPage() {
@@ -41,6 +42,7 @@ export default function LoginPage() {
           : await supabase.auth.signUp({ email, password });
         if (error) throw error;
         await migrateLocalToAccount();
+        track("signup");
         setMessage(t.login.signupSuccess);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -50,6 +52,7 @@ export default function LoginPage() {
         if (error) throw error;
         // Move whatever the guest built up locally into the account.
         await migrateLocalToAccount();
+        track("signin");
         router.push("/");
         router.refresh();
       }

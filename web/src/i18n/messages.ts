@@ -285,6 +285,11 @@ export interface Messages {
     streakDays: (n: number) => string;
     keepStreak: string;
     badgesTitle: string;
+    share: string;
+    shareCopied: string;
+    shareShared: string;
+    shareFailed: string;
+    shareHint: string;
     rulesTitle: string;
     rulesHint: string;
     itemN: (n: number) => string;
@@ -664,6 +669,11 @@ const ar: Messages = {
       })}`,
     keepStreak: "لا تكسر السلسلة — ارجع كل يوم!",
     badgesTitle: "شاراتك",
+    share: "شارك نتيجتك",
+    shareCopied: "اتنسخت! الصقها في أي مكان",
+    shareShared: "تمّت المشاركة",
+    shareFailed: "مقدرناش ننسخ — اعمل نسخ يدوي",
+    shareHint: "المربّعات بتوضّح أي سؤال ظبطته من غير ما تحرق الإجابات لحد.",
     rulesTitle: "قواعد أحاجي اليوم",
     rulesHint:
       "راجعها دلوقتي وأنت فاكر الأشكال — ده اللي بيحوّل التحدّي من قياس إلى تعلّم.",
@@ -1052,6 +1062,11 @@ const en: Messages = {
     streakDays: (n) => `🔥 ${n}-day streak`,
     keepStreak: "Don't break the streak — come back every day!",
     badgesTitle: "Your badges",
+    share: "Share your result",
+    shareCopied: "Copied — paste it anywhere",
+    shareShared: "Shared",
+    shareFailed: "Couldn't copy — select and copy manually",
+    shareHint: "The squares show which items you got, without spoiling any answers.",
     rulesTitle: "Today's rules",
     rulesHint:
       "Read them while the shapes are still fresh — this is what turns the challenge from a measurement into practice.",

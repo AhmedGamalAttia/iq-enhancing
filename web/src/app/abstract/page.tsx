@@ -12,6 +12,7 @@ import {
 import { scoreBand } from "@/lib/diagnostic";
 import { logPracticeToday } from "@/lib/data";
 import { useI18n } from "@/i18n/context";
+import { track } from "@/lib/analytics";
 import { HonestyNote } from "@/components/honesty-note";
 import { AbstractQuestionCard } from "@/components/abstract-question-card";
 import { Badge, Button, ButtonLink, Card, ProgressBar } from "@/components/ui";
@@ -19,7 +20,7 @@ import { Badge, Button, ButtonLink, Card, ProgressBar } from "@/components/ui";
 const SESSION = 14;
 
 export default function AbstractPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [phase, setPhase] = useState<"intro" | "running" | "done">("intro");
   const [step, setStep] = useState(0);
   const [current, setCurrent] = useState<AbstractItem | null>(null);
@@ -34,6 +35,7 @@ export default function AbstractPage() {
   }
 
   function start() {
+    track("abstract_start", locale);
     thetaRef.current = ABS_START;
     stats.current = { correct: 0, answered: 0 };
     setStep(0);

@@ -150,6 +150,8 @@ export interface DailyResult {
   total: number;
   timeMs: number;
   score: number;
+  /** Per-item outcome, for the spoiler-free share grid. Absent on old results. */
+  marks?: boolean[];
 }
 
 const LS_RESULT = "cog:daily:result";

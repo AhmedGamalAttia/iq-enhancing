@@ -22,6 +22,7 @@ import {
 } from "@/lib/data";
 import { newCardRecord } from "@/lib/fsrs";
 import { useI18n } from "@/i18n/context";
+import { track } from "@/lib/analytics";
 import { HonestyNote } from "@/components/honesty-note";
 import { QuestionCard } from "@/components/question-card";
 import { AbstractQuestionCard } from "@/components/abstract-question-card";
@@ -183,6 +184,7 @@ export default function DiagnosticPage() {
   }
 
   function start() {
+    track("diagnostic_start", locale);
     clearRun();
     setSaved(null);
     runLocale.current = locale;
@@ -199,6 +201,7 @@ export default function DiagnosticPage() {
   }
 
   function resume(run: SavedRun) {
+    track("diagnostic_resume", locale);
     runLocale.current = run.locale;
     thetas.current = { ...initThetas(), ...run.thetas } as Record<SkillKey, number>;
     seen.current = Object.fromEntries(
@@ -263,6 +266,7 @@ export default function DiagnosticPage() {
 
   async function finish() {
     setPhase("saving");
+    track("diagnostic_finish", locale);
     clearRun();
     const estimates = estimateFromItems(items.current);
     const result = {

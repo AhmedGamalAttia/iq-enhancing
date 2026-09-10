@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { logPracticeToday } from "@/lib/data";
 import { saveWorkingMemory } from "@/lib/wm";
+import { track } from "@/lib/analytics";
 import { useI18n } from "@/i18n/context";
 import { HonestyNote } from "@/components/honesty-note";
 import { Button, ButtonLink, Card, cn } from "@/components/ui";
@@ -160,6 +161,7 @@ export default function NBackPage() {
     setPhase("done");
     phaseRef.current = "done";
     logPracticeToday();
+    track("nback_finish");
     // This round IS the working-memory measurement for the whole platform.
     saveWorkingMemory({
       n: nRef.current,

@@ -19,8 +19,11 @@ import {
   setDisplayName,
   submitDailyScore,
   type DailyEntry,
+  type DailyResult,
 } from "@/lib/daily";
 import { describeRule } from "@/lib/abstract/describe";
+import { buildShareText, shareResult } from "@/lib/share";
+import { track } from "@/lib/analytics";
 import { getUserId, logPracticeToday } from "@/lib/data";
 import { computeStreak } from "@/lib/progress";
 import {
@@ -40,17 +43,15 @@ function fmt(ms: number): string {
 }
 
 export default function DailyPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [phase, setPhase] = useState<"intro" | "running" | "done">("intro");
   const [step, setStep] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [name, setName] = useState("");
-  const [result, setResult] = useState<{
-    correct: number;
-    total: number;
-    timeMs: number;
-    score: number;
-  } | null>(null);
+  const [result, setResult] = useState<DailyResult | null>(null);
+  const [shareState, setShareState] = useState<
+    "idle" | "shared" | "copied" | "failed"
+  >("idle");
   const [board, setBoard] = useState<DailyEntry[]>([]);
   const [rank, setRank] = useState<{
     rank: number;
@@ -66,6 +67,8 @@ export default function DailyPage() {
   const items = useRef<AbstractItem[]>([]);
   const startAt = useRef(0);
   const correct = useRef(0);
+  // Per-item outcome, for the spoiler-free share grid.
+  const marks = useRef<boolean[]>([]);
   const hiddenMs = useRef(0);
   const hiddenAt = useRef(0);
   const submitting = useRef(false);
@@ -126,8 +129,10 @@ export default function DailyPage() {
   }, [phase]);
 
   function start() {
+    track("daily_start", locale);
     items.current = generateDailyChallenge(dateSeedNumber());
     correct.current = 0;
+    marks.current = [];
     startAt.current = Date.now();
     hiddenMs.current = 0;
     hiddenAt.current = 0;
@@ -137,6 +142,7 @@ export default function DailyPage() {
   }
 
   async function onNext(isCorrect: boolean) {
+    marks.current.push(isCorrect);
     if (isCorrect) correct.current += 1;
     const next = step + 1;
     if (next >= items.current.length) {
@@ -154,13 +160,14 @@ export default function DailyPage() {
     const total = items.current.length;
     const c = correct.current;
     const score = dailyScore(c, timeMs);
-    const res = { correct: c, total, timeMs, score };
+    const res = { correct: c, total, timeMs, score, marks: [...marks.current] };
     setResult(res);
     saveLocalResult(res);
     setElapsed(timeMs);
     setPhase("done");
     logPracticeToday();
     logDailyToday();
+    track("daily_finish", locale);
 
     try {
       const sub = await submitDailyScore({ correct: c, timeMs });
@@ -286,7 +293,42 @@ export default function DailyPage() {
             {!posted && (
               <p className="mb-2 text-sm text-fg-muted">{t.daily.guestNote}</p>
             )}
-            <p className="text-xs text-fg-faint">{t.daily.comeBack}</p>
+            {/* The share loop: the daily challenge is one set for everyone and
+                one attempt, which is exactly the shape that spreads — but with
+                no share card that loop simply didn't exist. */}
+            <div className="mt-5 border-t border-border-soft pt-5">
+              <Button
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={async () => {
+                  const text = buildShareText({
+                    correct: result.correct,
+                    total: result.total,
+                    timeMs: result.timeMs,
+                    marks: result.marks ?? [],
+                    streak,
+                    rank: posted ? rank : null,
+                    locale,
+                    url: `${window.location.origin}/daily`,
+                  });
+                  setShareState(await shareResult(text));
+                  track("daily_share", locale);
+                }}
+              >
+                📤 {t.daily.share}
+              </Button>
+              <p className="mt-2 text-xs text-fg-faint">
+                {shareState === "copied"
+                  ? t.daily.shareCopied
+                  : shareState === "shared"
+                    ? t.daily.shareShared
+                    : shareState === "failed"
+                      ? t.daily.shareFailed
+                      : t.daily.shareHint}
+              </p>
+            </div>
+
+            <p className="mt-4 text-xs text-fg-faint">{t.daily.comeBack}</p>
             <HonestyNote className="mt-4" />
           </Card>
 
