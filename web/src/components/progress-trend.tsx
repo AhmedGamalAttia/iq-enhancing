@@ -68,7 +68,7 @@ export function ProgressTrend({ history }: { history: DiagnosticResult[] }) {
             >
               <span>{skill.icon}</span>
               <span className="flex-1 truncate text-sm">{t.skills[d.key].name}</span>
-              <span className="text-sm font-bold" style={{ color: skill.accent }}>
+              <span className="text-sm font-bold" style={{ color: skill.accentText }}>
                 {d.now}
               </span>
               <span
@@ -99,7 +99,7 @@ export function ProgressTrend({ history }: { history: DiagnosticResult[] }) {
                 { dateStyle: "medium" },
               )}
             </span>
-            <span className="font-bold text-brand">{avgScore(h.estimates)}</span>
+            <span className="font-bold text-brand-ink">{avgScore(h.estimates)}</span>
           </li>
         ))}
       </ul>

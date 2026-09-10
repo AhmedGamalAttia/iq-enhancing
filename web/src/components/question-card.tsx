@@ -85,7 +85,7 @@ export function QuestionCard({
         <span
           className="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold"
           style={{
-            color: meta.accent,
+            color: meta.accentText,
             borderColor: `${meta.accent}55`,
             background: `${meta.accent}14`,
           }}
@@ -111,6 +111,7 @@ export function QuestionCard({
               key={i}
               onClick={() => choose(i)}
               disabled={revealed}
+              aria-pressed={isChosen}
               className={cn(
                 "flex items-center gap-3 rounded-xl border p-4 text-start text-base transition-all",
                 "hover:border-brand/50 hover:bg-surface-2",
@@ -127,7 +128,7 @@ export function QuestionCard({
               <span
                 className={cn(
                   "grid h-7 w-7 shrink-0 place-items-center rounded-lg border text-sm font-bold",
-                  isChosen ? "border-brand text-brand" : "border-border text-fg-faint",
+                  isChosen ? "border-brand text-brand-ink" : "border-border text-fg-faint",
                 )}
               >
                 {t.question.letters[i] ?? i + 1}
@@ -153,7 +154,7 @@ export function QuestionCard({
 
           {aiText && (
             <div className="mt-3 rounded-lg border border-brand/30 bg-brand-soft p-3">
-              <p className="mb-1 text-xs font-bold text-brand">
+              <p className="mb-1 text-xs font-bold text-brand-ink">
                 {t.question.aiExtraTitle}
               </p>
               <p className="text-sm leading-relaxed text-fg">{aiText}</p>
@@ -164,7 +165,7 @@ export function QuestionCard({
             <button
               onClick={explainWithAI}
               disabled={aiState === "loading"}
-              className="mt-3 text-sm font-semibold text-brand hover:underline disabled:opacity-50"
+              className="mt-3 text-sm font-semibold text-brand-ink hover:underline disabled:opacity-50"
             >
               {aiState === "loading" ? t.question.generating : t.question.explainAI}
             </button>
@@ -172,8 +173,14 @@ export function QuestionCard({
         </div>
       )}
 
-      <div className="mt-6 flex justify-end">
-        <Button onClick={handleNext} disabled={chosen === null} size="lg">
+      {/* Sticky on phones so answering never means scrolling to find Next. */}
+      <div className="sticky bottom-0 -mx-6 mt-6 flex justify-end border-t border-border-soft bg-surface/95 px-6 py-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
+        <Button
+          onClick={handleNext}
+          disabled={chosen === null}
+          size="lg"
+          className="w-full md:w-auto"
+        >
           {index + 1 === total ? t.question.finish : t.question.next}
         </Button>
       </div>

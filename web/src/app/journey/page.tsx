@@ -32,21 +32,28 @@ export default function JourneyPage() {
   const [dailyDone, setDailyDone] = useState(false);
 
   useEffect(() => {
+    // Anything in here can throw (offline, blocked site data, a rejected
+    // query). It used to leave the page stuck on "loading…" forever.
     async function load() {
-      const [diag, cards] = await Promise.all([
-        getLatestDiagnostic(),
-        getReviewCards(),
-      ]);
-      const due = cards.filter((c) => {
-        if (!isDue(c)) return false;
-        const q = questionById(c.questionId);
-        return q ? (q.locale ?? "ar") === locale : false;
-      });
-      setDiagnostic(diag);
-      setDueCount(due.length);
-      setStreak(computeStreak(getPracticeDays()));
-      setDailyDone(await hasDoneTodayDaily());
-      setLoading(false);
+      try {
+        const [diag, cards] = await Promise.all([
+          getLatestDiagnostic(),
+          getReviewCards(),
+        ]);
+        const due = cards.filter((c) => {
+          if (!isDue(c)) return false;
+          const q = questionById(c.questionId);
+          return q ? (q.locale ?? "ar") === locale : false;
+        });
+        setDiagnostic(diag);
+        setDueCount(due.length);
+        setStreak(computeStreak(getPracticeDays()));
+        setDailyDone(await hasDoneTodayDaily());
+      } catch (err) {
+        console.error("[journey] load failed", err);
+      } finally {
+        setLoading(false);
+      }
     }
     void load();
   }, [locale]);
@@ -173,7 +180,7 @@ export default function JourneyPage() {
                       <span
                         dir="ltr"
                         className="w-8 text-end text-xs font-bold"
-                        style={{ color: reliable ? skill.accent : "var(--fg-faint)" }}
+                        style={{ color: reliable ? skill.accentText : "var(--fg-faint)" }}
                         title={reliable ? undefined : t.results.lowConfidence}
                       >
                         {reliable ? est.score : "—"}
@@ -199,7 +206,7 @@ export default function JourneyPage() {
           >
             {reassessReady ? (
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-sm font-semibold text-brand">
+                <span className="text-sm font-semibold text-brand-ink">
                   {t.journey.reassessReady}
                 </span>
                 <ButtonLink href="/diagnostic">{t.journey.reassessCta}</ButtonLink>

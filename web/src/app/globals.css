@@ -18,11 +18,14 @@
   /* text */
   --fg: #eef0f7;
   --fg-muted: #a2a7c4;
-  --fg-faint: #6f7699;
+  --fg-faint: #8288a6;   /* 4.59:1 on --surface-2 (was #6f7699 → 2.95:1) */
 
-  /* brand + accents */
-  --brand: #7c6cff;      /* indigo/violet — cognition */
-  --brand-strong: #6455f5;
+  /* Brand.  --brand is the *text/accent* hue and must clear 4.5:1 on every
+     surface; --brand-strong is the only one that carries white text on top of
+     it (6.29:1).  Never put white on --brand. */
+  --brand: #8475ff;      /* indigo/violet — cognition */
+  --brand-ink: #9b8fff;  /* text-only step: 5.42:1 even on a brand-tinted card */
+  --brand-strong: #5344e6;
   --brand-soft: #7c6cff26;
   --accent: #2dd4bf;     /* teal — insight */
   --accent-soft: #2dd4bf1f;
@@ -32,7 +35,16 @@
   --warning: #fbbf24;
   --danger: #f87171;
 
-  --ring: #7c6cff;
+  /* Per-skill accents used as TEXT. The vivid values in data/skills.ts stay for
+     bars and strokes; these are the contrast-checked text variants. */
+  --skill-abstract: #a78bfa;
+  --skill-logical: #8e81ff;
+  --skill-verbal: #2dd4bf;
+  --skill-working-memory: #f59e0b;
+  --skill-numeracy: #38bdf8;
+  --skill-critical: #fb7185;
+
+  --ring: #8475ff;
   --radius: 16px;
 }
 
@@ -47,17 +59,27 @@
 
     --fg: #14162b;
     --fg-muted: #545a78;
-    --fg-faint: #8a90ac;
+    --fg-faint: #696d83;   /* 4.61:1 on --surface-2 (was #8a90ac → 3.15:1) */
 
     --brand: #6455f5;
+    --brand-ink: #5344e6;
     --brand-strong: #5344e6;
     --brand-soft: #6455f514;
-    --accent: #0d9488;
+    --accent: #0e716a;
     --accent-soft: #0d948814;
 
-    --success: #059669;
-    --warning: #d97706;
-    --danger: #dc2626;
+    /* Each clears 4.5:1 even on its own 10%-tinted badge. */
+    --success: #047354;
+    --warning: #a44c08;
+    --danger: #c21d1d;
+
+    --skill-abstract: #705da7;
+    --skill-logical: #6356cc;
+    --skill-verbal: #19776b;
+    --skill-working-memory: #935f07;
+    --skill-numeracy: #227195;
+    --skill-critical: #a84c59;
+
     --ring: #6455f5;
   }
 }
@@ -75,6 +97,7 @@
   --color-fg-faint: var(--fg-faint);
 
   --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
   --color-brand-strong: var(--brand-strong);
   --color-brand-soft: var(--brand-soft);
   --color-accent: var(--accent);

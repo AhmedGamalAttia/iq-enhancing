@@ -76,17 +76,24 @@ export default function NBackPage() {
     timers.current.push(setTimeout(() => setPressed(false), 150));
   }, []);
 
-  // Spacebar to respond.
+  // Spacebar to respond — bound ONLY while a round is running. It used to be
+  // bound for the whole page lifetime, which swallowed Space everywhere and left
+  // keyboard users unable to activate any button on the intro or result screen.
   useEffect(() => {
+    if (phase !== "running") return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === "Space") {
-        e.preventDefault();
-        respond();
+      if (e.code !== "Space") return;
+      const el = e.target as HTMLElement | null;
+      // Never steal Space from a control the user is actually focused on.
+      if (el && el.closest("button, a, input, select, textarea, [contenteditable]")) {
+        return;
       }
+      e.preventDefault();
+      respond();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [respond]);
+  }, [phase, respond]);
 
   useEffect(() => () => clearTimers(), []);
 
@@ -203,7 +210,7 @@ export default function NBackPage() {
                 className={cn(
                   "flex flex-col items-center rounded-xl border px-4 py-2 text-sm font-bold transition-colors",
                   nLevel === n
-                    ? "border-brand bg-brand-soft text-brand"
+                    ? "border-brand bg-brand-soft text-brand-ink"
                     : "border-border text-fg-muted hover:border-brand/50",
                 )}
               >
@@ -216,7 +223,7 @@ export default function NBackPage() {
           </div>
           {best != null && (
             <p className="mb-6 text-xs text-fg-faint">
-              {t.nback.bestLabel(nLevel)}: <b className="text-brand">{best}</b>
+              {t.nback.bestLabel(nLevel)}: <b className="text-brand-ink">{best}</b>
             </p>
           )}
           <Button size="lg" onClick={start}>
@@ -227,7 +234,7 @@ export default function NBackPage() {
 
       {phase === "countdown" && (
         <Card className="grid place-items-center p-16">
-          <div className="text-6xl font-extrabold text-brand">{countdown}</div>
+          <div className="text-6xl font-extrabold text-brand-ink">{countdown}</div>
           <p className="mt-3 text-fg-muted">{t.nback.getReady}</p>
         </Card>
       )}
@@ -235,7 +242,7 @@ export default function NBackPage() {
       {phase === "running" && (
         <div>
           <div className="mb-4 flex items-center justify-between text-sm text-fg-faint">
-            <span dir="ltr" className="font-bold text-brand">
+            <span dir="ltr" className="font-bold text-brand-ink">
               {t.nback.level(nLevel)}
             </span>
             <span dir="ltr">{t.nback.progress(index + 1, TRIALS)}</span>
@@ -260,8 +267,8 @@ export default function NBackPage() {
             className={cn(
               "w-full rounded-2xl border-2 py-5 text-lg font-bold transition-all",
               pressed
-                ? "border-brand bg-brand text-white"
-                : "border-brand/40 bg-brand-soft text-brand hover:bg-brand/15",
+                ? "border-brand bg-brand-strong text-white"
+                : "border-brand/40 bg-brand-soft text-brand-ink hover:bg-brand/15",
             )}
           >
             {t.nback.match}
@@ -278,7 +285,7 @@ export default function NBackPage() {
           <h2 className="mb-4 text-xl font-bold">{t.nback.doneTitle}</h2>
 
           <div className="mb-4">
-            <div dir="ltr" className="text-5xl font-extrabold text-brand">
+            <div dir="ltr" className="text-5xl font-extrabold text-brand-ink">
               {result.score}
               <span className="text-lg text-fg-faint">/100</span>
             </div>

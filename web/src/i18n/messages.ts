@@ -11,11 +11,30 @@ export interface Messages {
     diagnostic: string;
     results: string;
     practice: string;
+    daily: string;
+    abstract: string;
+    nback: string;
     login: string;
     logout: string;
     guest: string;
+    openMenu: string;
+    closeMenu: string;
   };
   lang: { switchTo: string; label: string };
+  a11y: {
+    optionN: (n: number) => string;
+    optionLetter: (letter: string, text: string) => string;
+    chooseSkill: string;
+    chooseDifficulty: string;
+  };
+  errors: {
+    title: string;
+    body: string;
+    retry: string;
+    home: string;
+    notFoundTitle: string;
+    notFoundBody: string;
+  };
   home: {
     heroBadge: string;
     heroTitle1: string;
@@ -42,6 +61,11 @@ export interface Messages {
     start: string;
     saving: string;
     goResults: string;
+    resumeTitle: string;
+    resumeBody: (done: number, total: number) => string;
+    resume: string;
+    restart: string;
+    localeLocked: string;
   };
   question: {
     progress: (i: number, n: number, d: number) => string;
@@ -92,6 +116,7 @@ export interface Messages {
     generate: string;
     generating: string;
     aiNote: string;
+    aiFailed: string;
   };
   login: {
     signinTitle: string;
@@ -170,6 +195,17 @@ export interface Messages {
     bestLabel: (n: number) => string;
     cardHint: string;
   };
+  abstractA11y: {
+    kinds: Record<"circle" | "square" | "triangle" | "diamond" | "arrow", string>;
+    fills: Record<"solid" | "outline", string>;
+    sizes: Record<1 | 2 | 3, string>;
+    cell: (count: number, kind: string, fill: string, size: string, rot: number) => string;
+    emptyCell: string;
+    promptTitle: string;
+    promptStep: (i: number, desc: string) => string;
+    matrixCellAt: (row: number, col: number, desc: string) => string;
+    optionsTitle: string;
+  };
   abstract: {
     title: string;
     cardHint: string;
@@ -237,11 +273,30 @@ const ar: Messages = {
     diagnostic: "التقييم",
     results: "النتائج",
     practice: "التدريب",
+    daily: "التحدّي اليومي",
+    abstract: "الاستدلال المجرّد",
+    nback: "الذاكرة العاملة",
     login: "دخول",
     logout: "خروج",
     guest: "وضع ضيف",
+    openMenu: "فتح القائمة",
+    closeMenu: "إغلاق القائمة",
   },
   lang: { switchTo: "English", label: "اللغة" },
+  a11y: {
+    optionN: (n) => `الاختيار رقم ${n}`,
+    optionLetter: (letter, text) => `الاختيار ${letter}: ${text}`,
+    chooseSkill: "اختر المحور",
+    chooseDifficulty: "اختر مستوى الصعوبة",
+  },
+  errors: {
+    title: "حصل خطأ غير متوقّع",
+    body: "معلش، حاجة وقعت عندنا. جرّب تاني، ولو الموضوع اتكرر ارجع للصفحة الرئيسية.",
+    retry: "حاول تاني",
+    home: "الصفحة الرئيسية",
+    notFoundTitle: "الصفحة دي مش موجودة",
+    notFoundBody: "الرابط اللي فتحته اتغيّر أو مش صح.",
+  },
   home: {
     heroBadge: "قائم على الأدلّة العلمية — لا لعبة ولا تسلية",
     heroTitle1: "طوّر قدراتك المعرفية",
@@ -279,6 +334,13 @@ const ar: Messages = {
     start: "ابدأ التقييم",
     saving: "جارٍ حساب نتائجك…",
     goResults: "اذهب للنتائج",
+    resumeTitle: "عندك تقييم لسه مخلّصتوش",
+    resumeBody: (done, total) =>
+      `وصلت للسؤال ${done} من ${total}. تحب تكمّل من مكانك ولا تبدأ من الأول؟`,
+    resume: "كمّل من مكاني",
+    restart: "ابدأ من الأول",
+    localeLocked:
+      "التقييم بيفضل بلغة بدايته عشان النتيجة تفضل قابلة للمقارنة.",
   },
   question: {
     progress: (i, n, d) => `سؤال ${i} / ${n} · صعوبة ${d}/5`,
@@ -334,6 +396,8 @@ const ar: Messages = {
     generate: "ولّد ٣ أسئلة",
     generating: "…جارٍ التوليد",
     aiNote: "الأسئلة المولّدة للتدريب الفوري ولا تُحفظ في بنك المراجعة.",
+    aiFailed:
+      "تعذّر الاتصال بمولّد الأسئلة. جرّب تاني بعد شوية — تدريبك المحفوظ مش متأثر.",
   },
   login: {
     signinTitle: "تسجيل الدخول",
@@ -423,6 +487,24 @@ const ar: Messages = {
     toPractice: "رجوع للتدريب",
     bestLabel: (n) => `أفضل نتيجة (${n}-back)`,
     cardHint: "تمرين تفاعلي بمؤقّت لتقوية الذاكرة العاملة",
+  },
+  abstractA11y: {
+    kinds: {
+      circle: "دائرة",
+      square: "مربّع",
+      triangle: "مثلّث",
+      diamond: "مُعيّن",
+      arrow: "سهم",
+    },
+    fills: { solid: "مصمت", outline: "مفرّغ" },
+    sizes: { 1: "صغير", 2: "متوسط", 3: "كبير" },
+    cell: (count, kind, fill, size, rot) =>
+      `عدد ${count} — ${kind}، ${fill}، ${size}، دوران ${rot} درجة`,
+    emptyCell: "خانة فارغة — هي المطلوبة",
+    promptTitle: "وصف نصّي للنمط",
+    promptStep: (i, desc) => `الخطوة ${i}: ${desc}`,
+    matrixCellAt: (row, col, desc) => `الصف ${row} العمود ${col}: ${desc}`,
+    optionsTitle: "الاختيارات",
   },
   abstract: {
     title: "الاستدلال المجرّد",
@@ -531,11 +613,30 @@ const en: Messages = {
     diagnostic: "Assessment",
     results: "Results",
     practice: "Practice",
+    daily: "Daily Challenge",
+    abstract: "Abstract Reasoning",
+    nback: "Working Memory",
     login: "Sign in",
     logout: "Sign out",
     guest: "Guest mode",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
   },
   lang: { switchTo: "العربية", label: "Language" },
+  a11y: {
+    optionN: (n) => `Option ${n}`,
+    optionLetter: (letter, text) => `Option ${letter}: ${text}`,
+    chooseSkill: "Choose a dimension",
+    chooseDifficulty: "Choose a difficulty level",
+  },
+  errors: {
+    title: "Something went wrong",
+    body: "Sorry — that broke on our side. Try again, and if it keeps happening head back to the home page.",
+    retry: "Try again",
+    home: "Home page",
+    notFoundTitle: "This page doesn't exist",
+    notFoundBody: "The link you opened has moved or isn't valid.",
+  },
   home: {
     heroBadge: "Evidence-based — not a game, not entertainment",
     heroTitle1: "Develop your cognitive abilities",
@@ -573,6 +674,13 @@ const en: Messages = {
     start: "Start assessment",
     saving: "Calculating your results…",
     goResults: "Go to results",
+    resumeTitle: "You have an unfinished assessment",
+    resumeBody: (done, total) =>
+      `You reached question ${done} of ${total}. Continue where you left off, or start over?`,
+    resume: "Continue",
+    restart: "Start over",
+    localeLocked:
+      "An assessment stays in the language it started in, so the score remains comparable.",
   },
   question: {
     progress: (i, n, d) => `Question ${i} / ${n} · difficulty ${d}/5`,
@@ -628,6 +736,8 @@ const en: Messages = {
     generate: "Generate 3 questions",
     generating: "…generating",
     aiNote: "Generated questions are for instant practice and are not saved to your review deck.",
+    aiFailed:
+      "Couldn't reach the question generator. Try again shortly — your saved practice is unaffected.",
   },
   login: {
     signinTitle: "Sign in",
@@ -717,6 +827,24 @@ const en: Messages = {
     toPractice: "Back to practice",
     bestLabel: (n) => `Best (${n}-back)`,
     cardHint: "A timed interactive task to strengthen working memory",
+  },
+  abstractA11y: {
+    kinds: {
+      circle: "circle",
+      square: "square",
+      triangle: "triangle",
+      diamond: "diamond",
+      arrow: "arrow",
+    },
+    fills: { solid: "solid", outline: "outline" },
+    sizes: { 1: "small", 2: "medium", 3: "large" },
+    cell: (count, kind, fill, size, rot) =>
+      `${count} × ${kind} — ${fill}, ${size}, rotated ${rot} degrees`,
+    emptyCell: "empty cell — this is the missing one",
+    promptTitle: "Text description of the pattern",
+    promptStep: (i, desc) => `Step ${i}: ${desc}`,
+    matrixCellAt: (row, col, desc) => `Row ${row}, column ${col}: ${desc}`,
+    optionsTitle: "Options",
   },
   abstract: {
     title: "Abstract Reasoning",

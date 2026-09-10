@@ -114,15 +114,24 @@ function ShapeMark({
 export function AbstractFigure({
   cell,
   size = 64,
+  className,
 }: {
   cell: Cell;
   size?: number;
+  /** Optional responsive sizing; CSS wins over the width/height attributes. */
+  className?: string;
 }) {
   const count = Math.min(4, Math.max(1, cell.shapes.length));
   const pos = positions(count);
 
   return (
-    <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true">
+    <svg
+      viewBox="0 0 100 100"
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden="true"
+    >
       <rect x={2} y={2} width={96} height={96} rx={12} fill="var(--surface-2)" />
       {cell.shapes.slice(0, 4).map((shape, i) => {
         const [cx, cy] = pos[i] ?? [50, 50];
@@ -140,9 +149,21 @@ export function AbstractFigure({
   );
 }
 
-export function MissingCell({ size = 64 }: { size?: number }) {
+export function MissingCell({
+  size = 64,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) {
   return (
-    <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true">
+    <svg
+      viewBox="0 0 100 100"
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden="true"
+    >
       <rect
         x={3}
         y={3}

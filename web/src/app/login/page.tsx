@@ -69,7 +69,7 @@ export default function LoginPage() {
             {t.login.notConfiguredTitle}
           </h1>
           <p className="mb-6 text-fg-muted">{t.login.notConfiguredBody}</p>
-          <Link href="/" className="text-brand hover:underline">
+          <Link href="/" className="text-brand-ink hover:underline">
             {t.login.backHome}
           </Link>
         </Card>
@@ -87,10 +87,13 @@ export default function LoginPage() {
 
         <form onSubmit={submit} className="grid gap-4">
           <div>
-            <label className="mb-1 block text-sm font-semibold">
+            <label htmlFor="email" className="mb-1 block text-sm font-semibold">
               {t.login.email}
             </label>
             <input
+              id="email"
+              name="email"
+              autoComplete="email"
               type="email"
               required
               value={email}
@@ -101,10 +104,13 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-semibold">
+            <label htmlFor="password" className="mb-1 block text-sm font-semibold">
               {t.login.password}
             </label>
             <input
+              id="password"
+              name="password"
+              autoComplete={mode === "signin" ? "current-password" : "new-password"}
               type="password"
               required
               minLength={6}

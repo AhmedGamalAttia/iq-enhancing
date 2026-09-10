@@ -99,7 +99,7 @@ export default function ResultsPage() {
                       <div
                         dir="ltr"
                         className="text-2xl font-extrabold"
-                        style={{ color: skill.accent }}
+                        style={{ color: skill.accentText }}
                       >
                         {est.score}
                         <span className="text-sm text-fg-faint">
@@ -126,7 +126,7 @@ export default function ResultsPage() {
 
       {weakest && (
         <Card className="mt-6 border-brand/30 bg-brand-soft p-6">
-          <p className="mb-1 text-sm font-bold text-brand">
+          <p className="mb-1 text-sm font-bold text-brand-ink">
             {t.results.recommendationTitle}
           </p>
           <p className="leading-relaxed text-fg">

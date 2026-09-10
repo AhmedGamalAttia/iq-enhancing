@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { Locale } from "@/i18n/config";
 import type { DiagnosticItem, Question, SkillKey } from "@/lib/types";
 import type { AbstractItem } from "@/lib/abstract/types";
 import { questionsBySkill } from "@/data/questions";
@@ -77,12 +78,53 @@ function initSeen(): Record<SkillKey, Set<string>> {
   ) as Record<SkillKey, Set<string>>;
 }
 
+// ---------------------------- resume support ----------------------------
+// Leaving mid-assessment used to throw away every answer. The run is small
+// enough to snapshot after each item, so a closed tab or a stray back-swipe
+// costs nothing.
+const LS_RUN = "cog:diagnostic:inprogress";
+const RUN_TTL_MS = 24 * 60 * 60 * 1000;
+
+interface SavedRun {
+  locale: Locale;
+  step: number;
+  thetas: Record<string, number>;
+  seen: Record<string, string[]>;
+  items: DiagnosticItem[];
+  schedule: SkillKey[];
+  abstractSeen: number;
+  savedAt: number;
+}
+
+function readRun(): SavedRun | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(LS_RUN);
+    if (!raw) return null;
+    const run = JSON.parse(raw) as SavedRun;
+    if (!run?.schedule?.length || run.step <= 0) return null;
+    if (Date.now() - run.savedAt > RUN_TTL_MS) return null;
+    return run;
+  } catch {
+    return null;
+  }
+}
+
+function clearRun(): void {
+  try {
+    localStorage.removeItem(LS_RUN);
+  } catch {
+    /* ignore */
+  }
+}
+
 export default function DiagnosticPage() {
   const router = useRouter();
   const { t, locale } = useI18n();
   const [phase, setPhase] = useState<"intro" | "running" | "saving">("intro");
   const [step, setStep] = useState(0);
   const [current, setCurrent] = useState<Item | null>(null);
+  const [saved, setSaved] = useState<SavedRun | null>(null);
 
   const thetas = useRef<Record<SkillKey, number>>(initThetas());
   const seen = useRef<Record<SkillKey, Set<string>>>(initSeen());
@@ -91,6 +133,31 @@ export default function DiagnosticPage() {
   const abstractSeen = useRef(0);
   const shownAt = useRef<number>(0);
   const recent = useRef<Set<string>>(new Set());
+  // The language the run STARTED in. Switching mid-assessment used to mix
+  // Arabic and English items into one estimate.
+  const runLocale = useRef<Locale>(locale);
+
+  useEffect(() => setSaved(readRun()), []);
+
+  function persistRun() {
+    try {
+      const run: SavedRun = {
+        locale: runLocale.current,
+        step: step + 1,
+        thetas: thetas.current,
+        seen: Object.fromEntries(
+          Object.entries(seen.current).map(([k, v]) => [k, [...v]]),
+        ),
+        items: items.current,
+        schedule: schedule.current,
+        abstractSeen: abstractSeen.current,
+        savedAt: Date.now(),
+      };
+      localStorage.setItem(LS_RUN, JSON.stringify(run));
+    } catch {
+      /* storage blocked — the run still works, it just can't be resumed */
+    }
+  }
 
   function pickFor(s: number): Item | null {
     const skill = schedule.current[s];
@@ -106,7 +173,7 @@ export default function DiagnosticPage() {
       };
     }
     const q = selectNextQuestion(
-      questionsBySkill(skill, locale),
+      questionsBySkill(skill, runLocale.current),
       seen.current[skill],
       thetas.current[skill],
       recent.current,
@@ -115,6 +182,9 @@ export default function DiagnosticPage() {
   }
 
   function start() {
+    clearRun();
+    setSaved(null);
+    runLocale.current = locale;
     thetas.current = initThetas();
     seen.current = initSeen();
     items.current = [];
@@ -123,6 +193,27 @@ export default function DiagnosticPage() {
     recent.current = new Set(getRecentQuestionIds());
     setCurrent(pickFor(0));
     setStep(0);
+    shownAt.current = Date.now();
+    setPhase("running");
+  }
+
+  function resume(run: SavedRun) {
+    runLocale.current = run.locale;
+    thetas.current = { ...initThetas(), ...run.thetas } as Record<SkillKey, number>;
+    seen.current = Object.fromEntries(
+      SKILL_ORDER.map((k) => [k, new Set(run.seen[k] ?? [])]),
+    ) as Record<SkillKey, Set<string>>;
+    items.current = run.items;
+    schedule.current = run.schedule;
+    abstractSeen.current = run.abstractSeen;
+    recent.current = new Set(getRecentQuestionIds());
+    const next = pickFor(run.step);
+    if (!next) {
+      start();
+      return;
+    }
+    setStep(run.step);
+    setCurrent(next);
     shownAt.current = Date.now();
     setPhase("running");
   }
@@ -163,6 +254,7 @@ export default function DiagnosticPage() {
       await finish();
       return;
     }
+    persistRun();
     setStep(nextStep);
     setCurrent(next);
     shownAt.current = Date.now();
@@ -170,6 +262,7 @@ export default function DiagnosticPage() {
 
   async function finish() {
     setPhase("saving");
+    clearRun();
     const estimates = estimateFromItems(items.current);
     const result = {
       id:
@@ -215,7 +308,7 @@ export default function DiagnosticPage() {
                 key={k}
                 className="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold"
                 style={{
-                  color: SKILLS[k].accent,
+                  color: SKILLS[k].accentText,
                   borderColor: `${SKILLS[k].accent}55`,
                   background: `${SKILLS[k].accent}14`,
                 }}
@@ -225,9 +318,29 @@ export default function DiagnosticPage() {
             ))}
           </div>
           <p className="mb-6 text-xs text-fg-faint">{t.diagnostic.notIQ}</p>
-          <Button size="lg" onClick={start}>
-            {t.diagnostic.start}
-          </Button>
+
+          {saved ? (
+            <div className="mx-auto max-w-sm rounded-xl border border-brand/30 bg-brand-soft p-4">
+              <p className="mb-1 font-bold text-brand-ink">
+                {t.diagnostic.resumeTitle}
+              </p>
+              <p className="mb-4 text-sm text-fg-muted">
+                {t.diagnostic.resumeBody(saved.step, TOTAL)}
+              </p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Button onClick={() => resume(saved)}>
+                  {t.diagnostic.resume}
+                </Button>
+                <Button variant="outline" onClick={start}>
+                  {t.diagnostic.restart}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button size="lg" onClick={start}>
+              {t.diagnostic.start}
+            </Button>
+          )}
         </Card>
       )}
 
@@ -239,6 +352,11 @@ export default function DiagnosticPage() {
               style={{ width: `${progress}%` }}
             />
           </div>
+          {locale !== runLocale.current && (
+            <p className="mb-3 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-fg-muted">
+              {t.diagnostic.localeLocked}
+            </p>
+          )}
           {current.kind === "text" ? (
             <QuestionCard
               key={current.q.id}

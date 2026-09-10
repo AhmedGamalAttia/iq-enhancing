@@ -208,10 +208,12 @@ export default function DailyPage() {
             </div>
           )}
           <div className="mx-auto mb-6 max-w-xs text-start">
-            <label className="mb-1 block text-sm font-semibold">
+            <label htmlFor="display-name" className="mb-1 block text-sm font-semibold">
               {t.daily.nameLabel}
             </label>
             <input
+              id="display-name"
+              name="display-name"
               value={name}
               onChange={(e) => {
                 setName(e.target.value);
@@ -271,7 +273,7 @@ export default function DailyPage() {
 
             {posted && rank && rank.total > 0 && (
               <div className="mb-2 rounded-xl border border-brand/30 bg-brand-soft p-3">
-                <p className="font-bold text-brand">
+                <p className="font-bold text-brand-ink">
                   {t.daily.rank(rank.rank, rank.total)}
                 </p>
                 <p className="text-sm text-fg-muted">
@@ -307,7 +309,7 @@ export default function DailyPage() {
                       {t.daily.badgeNames[b.id]}
                     </div>
                     {isNew && (
-                      <span className="absolute -top-1 -end-1 rounded-full bg-brand px-1.5 py-0.5 text-[9px] font-bold text-white">
+                      <span className="absolute -top-1 -end-1 rounded-full bg-brand-strong px-1.5 py-0.5 text-[9px] font-bold text-white">
                         {t.daily.newBadge}
                       </span>
                     )}
@@ -352,7 +354,7 @@ export default function DailyPage() {
                       <span dir="ltr" className="text-xs text-fg-faint">
                         {row.correct}/10 · {fmt(row.time_ms)}
                       </span>
-                      <span className="w-14 text-end font-bold text-brand">
+                      <span className="w-14 text-end font-bold text-brand-ink">
                         {row.score}
                       </span>
                     </li>
@@ -376,7 +378,7 @@ export default function DailyPage() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-border-soft bg-surface-2/50 p-3">
-      <div dir="ltr" className="text-2xl font-bold text-brand">
+      <div dir="ltr" className="text-2xl font-bold text-brand-ink">
         {value}
       </div>
       <div className="text-xs text-fg-faint">{label}</div>

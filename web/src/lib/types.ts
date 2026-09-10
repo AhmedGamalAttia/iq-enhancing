@@ -15,7 +15,12 @@ export type SkillKey =
 export interface Skill {
   key: SkillKey;
   icon: string; // emoji
-  accent: string; // hex used for meters + chips
+  accent: string; // hex — meters, strokes, tinted chip backgrounds
+  /**
+   * The same hue, but a step that clears 4.5:1 on every surface in both themes.
+   * Use this (never `accent`) whenever the colour is applied to text.
+   */
+  accentText: string; // CSS var reference
 }
 
 export type QuestionType = "mcq";

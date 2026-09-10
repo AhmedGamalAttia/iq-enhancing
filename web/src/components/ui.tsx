@@ -26,7 +26,7 @@ export function Card({
 
 // ------------------------------- Badge -------------------------------
 const toneMap: Record<string, string> = {
-  brand: "bg-brand-soft text-brand border-brand/30",
+  brand: "bg-brand-soft text-brand-ink border-brand/30",
   accent: "bg-accent-soft text-accent border-accent/30",
   success: "bg-success/10 text-success border-success/30",
   warning: "bg-warning/10 text-warning border-warning/30",
@@ -62,7 +62,7 @@ type ButtonSize = "sm" | "md" | "lg";
 
 const variantMap: Record<ButtonVariant, string> = {
   primary:
-    "bg-brand text-white hover:bg-brand-strong border border-transparent shadow-[0_8px_24px_-12px_var(--brand)]",
+    "bg-brand-strong text-white hover:brightness-110 border border-transparent shadow-[0_8px_24px_-12px_var(--brand)]",
   outline:
     "bg-transparent text-fg border border-border hover:border-brand/50 hover:bg-surface-2",
   ghost: "bg-transparent text-fg-muted hover:text-fg hover:bg-surface-2 border border-transparent",

@@ -42,12 +42,25 @@ export default function PracticePage() {
   }, [locale]);
 
   useEffect(() => {
-    hasDoneTodayDaily().then(setDailyDone);
+    hasDoneTodayDaily()
+      .then(setDailyDone)
+      .catch(() => setDailyDone(false));
   }, []);
 
   async function buildSession() {
     setPhase("loading");
-    const cards = await getReviewCards();
+    // A failure here must still land on a real screen: the authored bank is
+    // local, so a session can be built even when the cloud is unreachable.
+    let cards: ReviewCardRecord[] = [];
+    let diagnostic: Awaited<ReturnType<typeof getLatestDiagnostic>> = null;
+    try {
+      [cards, diagnostic] = await Promise.all([
+        getReviewCards(),
+        getLatestDiagnostic(),
+      ]);
+    } catch (err) {
+      console.error("[practice] could not load progress", err);
+    }
     cardMap.current = new Map(cards.map((c) => [c.questionId, c]));
 
     // 1) Due spaced-repetition cards in the current language.
@@ -57,7 +70,6 @@ export default function PracticePage() {
       .filter((q): q is Question => !!q && (q.locale ?? "ar") === locale);
 
     // 2) Top up with new authored questions, weakest skill first.
-    const diagnostic = await getLatestDiagnostic();
     const weakFirst = weakestSkillOrder(diagnostic?.estimates);
     const carded = new Set(cards.map((c) => c.questionId));
     const fresh = QUESTIONS.filter(
@@ -116,13 +128,15 @@ export default function PracticePage() {
           locale,
         }),
       });
-      const data = await res.json();
-      if (!data.available) {
+      const data = await res.json().catch(() => ({}));
+      // Only an explicit `available: false` means "no AI configured". A plain
+      // 400 used to hide the whole panel for the rest of the session.
+      if (data.available === false) {
         setAiAvailable(false);
         return;
       }
-      if (data.error) {
-        setGenError(data.error);
+      if (data.error || !res.ok) {
+        setGenError(data.error ?? t.practice.aiFailed);
         return;
       }
       const newQs: Question[] = data.questions ?? [];
@@ -137,7 +151,8 @@ export default function PracticePage() {
         }
       }
     } catch {
-      // ignore transient errors
+      // Silence here meant the button just did nothing, forever.
+      setGenError(t.practice.aiFailed);
     } finally {
       setGenState("idle");
     }
@@ -239,6 +254,7 @@ export default function PracticePage() {
           <p className="mb-3 text-sm font-bold">{t.practice.aiPanelTitle}</p>
           <div className="flex flex-wrap items-center gap-3">
             <select
+              aria-label={t.a11y.chooseSkill}
               value={genSkill}
               onChange={(e) => setGenSkill(e.target.value as SkillKey)}
               className="h-10 rounded-lg border border-border bg-surface px-3 text-sm"
@@ -250,6 +266,7 @@ export default function PracticePage() {
               ))}
             </select>
             <select
+              aria-label={t.a11y.chooseDifficulty}
               value={genDiff}
               onChange={(e) => setGenDiff(Number(e.target.value))}
               className="h-10 rounded-lg border border-border bg-surface px-3 text-sm"

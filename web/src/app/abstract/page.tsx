@@ -115,7 +115,7 @@ export default function AbstractPage() {
           <h2 className="mb-4 text-xl font-bold">{t.abstract.doneTitle}</h2>
 
           <p className="mb-1 text-sm text-fg-faint">{t.abstract.estimatedLevel}</p>
-          <div className="mb-2 text-5xl font-extrabold text-brand">
+          <div className="mb-2 text-5xl font-extrabold text-brand-ink">
             {finalScore}
             <span className="text-lg text-fg-faint">/100</span>
           </div>

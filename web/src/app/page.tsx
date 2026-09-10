@@ -47,7 +47,7 @@ export default function Home() {
                 <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-soft text-2xl">
                   {s.icon}
                 </span>
-                <span className="text-sm font-bold text-brand">
+                <span className="text-sm font-bold text-brand-ink">
                   {h.stepLabel(String(i + 1))}
                 </span>
               </div>
