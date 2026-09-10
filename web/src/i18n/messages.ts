@@ -68,6 +68,11 @@ export interface Messages {
     recommendationBody: (skill: string) => string;
     startTraining: string;
     retake: string;
+    trendTitle: string;
+    trendNeedMore: string;
+    trendAvgLabel: string;
+    trendChangeTitle: string;
+    trendHistoryTitle: string;
   };
   practice: {
     title: string;
@@ -224,6 +229,11 @@ const ar: Messages = {
       `محور «${skill}» هو الأكثر حاجة للتطوير حالياً. ركّز تدريبك عليه أولاً — الممارسة المتعمّدة على نقاط الضعف هي أسرع طريق للتحسّن.`,
     startTraining: "ابدأ التدريب الآن",
     retake: "أعد التقييم",
+    trendTitle: "تطوّرك عبر الزمن",
+    trendNeedMore: "أعد التقييم بعد فترة عشان تشوف تطوّرك عبر الزمن.",
+    trendAvgLabel: "متوسّط الدرجة",
+    trendChangeTitle: "التغيّر منذ أول تقييم",
+    trendHistoryTitle: "سجل التقييمات",
   },
   practice: {
     title: "التدريب",
@@ -414,6 +424,11 @@ const en: Messages = {
       `“${skill}” needs the most development right now. Focus your training there first — deliberate practice on weak spots is the fastest way to improve.`,
     startTraining: "Start training now",
     retake: "Retake assessment",
+    trendTitle: "Your progress over time",
+    trendNeedMore: "Re-assess after a while to see your progress over time.",
+    trendAvgLabel: "Average score",
+    trendChangeTitle: "Change since first assessment",
+    trendHistoryTitle: "Assessment history",
   },
   practice: {
     title: "Practice",

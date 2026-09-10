@@ -2,20 +2,25 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { DiagnosticResult, SkillEstimate, SkillKey } from "@/lib/types";
-import { getLatestDiagnostic } from "@/lib/data";
+import { getDiagnosticHistory, getLatestDiagnostic } from "@/lib/data";
 import { scoreBand } from "@/lib/diagnostic";
 import { SKILLS } from "@/data/skills";
 import { useI18n } from "@/i18n/context";
+import { ProgressTrend } from "@/components/progress-trend";
 import { Badge, ButtonLink, Card, ProgressBar } from "@/components/ui";
 
 export default function ResultsPage() {
   const { t, locale } = useI18n();
   const [result, setResult] = useState<DiagnosticResult | null>(null);
+  const [history, setHistory] = useState<DiagnosticResult[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getLatestDiagnostic()
-      .then(setResult)
+    Promise.all([getLatestDiagnostic(), getDiagnosticHistory()])
+      .then(([r, h]) => {
+        setResult(r);
+        setHistory(h);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -117,6 +122,8 @@ export default function ResultsPage() {
           </div>
         </Card>
       )}
+
+      <ProgressTrend history={history} />
     </div>
   );
 }

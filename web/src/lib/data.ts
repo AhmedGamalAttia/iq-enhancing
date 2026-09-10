@@ -11,6 +11,7 @@ import type { DiagnosticResult, ReviewCardRecord } from "@/lib/types";
 // mode automatically.
 
 const LS_DIAGNOSTIC = "cog:diagnostic:latest";
+const LS_HISTORY = "cog:diagnostic:history";
 const LS_CARDS = "cog:reviewcards";
 const LS_PRACTICE_DAYS = "cog:practicedays";
 
@@ -44,7 +45,54 @@ export async function saveDiagnostic(result: DiagnosticResult): Promise<void> {
 
   if (hasWindow()) {
     localStorage.setItem(LS_DIAGNOSTIC, JSON.stringify(result));
+    const hist = readHistoryLS();
+    hist.push(result);
+    localStorage.setItem(LS_HISTORY, JSON.stringify(hist.slice(-30)));
   }
+}
+
+function readHistoryLS(): DiagnosticResult[] {
+  if (!hasWindow()) return [];
+  const raw = localStorage.getItem(LS_HISTORY);
+  if (raw) {
+    try {
+      return JSON.parse(raw) as DiagnosticResult[];
+    } catch {
+      return [];
+    }
+  }
+  // No history array yet — fall back to the single latest result if present.
+  const latest = localStorage.getItem(LS_DIAGNOSTIC);
+  if (latest) {
+    try {
+      return [JSON.parse(latest) as DiagnosticResult];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+/** All past diagnostics, oldest → newest, for the progress-over-time view. */
+export async function getDiagnosticHistory(): Promise<DiagnosticResult[]> {
+  const supabase = createClient();
+  const userId = await getUserId();
+
+  if (supabase && userId) {
+    const { data } = await supabase
+      .from("diagnostic_results")
+      .select("id, finished_at, estimates")
+      .eq("user_id", userId)
+      .order("finished_at", { ascending: true });
+    return (data ?? []).map((d) => ({
+      id: String(d.id),
+      finishedAt: d.finished_at as string,
+      estimates: d.estimates as DiagnosticResult["estimates"],
+      items: [],
+    }));
+  }
+
+  return readHistoryLS();
 }
 
 export async function getLatestDiagnostic(): Promise<DiagnosticResult | null> {

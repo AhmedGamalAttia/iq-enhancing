@@ -34,3 +34,14 @@ export function daysSince(iso: string, now: Date = new Date()): number {
 }
 
 export const REASSESS_INTERVAL_DAYS = 14;
+
+/** Mean of the per-skill scores in a diagnostic's estimates (0..100). */
+export function avgScore(
+  estimates: Record<string, { score: number } | undefined>,
+): number {
+  const scores = Object.values(estimates)
+    .filter((e): e is { score: number } => !!e)
+    .map((e) => e.score);
+  if (scores.length === 0) return 0;
+  return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+}
