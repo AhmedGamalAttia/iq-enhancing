@@ -1,0 +1,19 @@
+# Root safety net (web/ has its own .gitignore too).
+
+# dependencies
+node_modules/
+
+# secrets / env (never commit real keys)
+.env
+.env.*
+!.env.example
+
+# build output
+.next/
+dist/
+build/
+
+# misc
+.DS_Store
+*.log
+.playwright-mcp/

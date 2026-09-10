@@ -1,0 +1,19 @@
+{
+  "name": "منصّة تنمية القدرات المعرفية",
+  "short_name": "القدرات المعرفية",
+  "description": "تقييم وتطوير القدرات المعرفية بطرق علمية ممنهجة.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0c14",
+  "theme_color": "#0b0c14",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
