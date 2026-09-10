@@ -146,10 +146,19 @@ function buildOptions(
 }
 
 // ------------------------------- SEQUENCE -------------------------------
-function cycleFor(attr: Attr, len?: number): (number | string)[] {
-  if (attr === "fill") return shuffle([...FILLS]); // period 2
-  if (attr === "rotation") return shuffle([...ROTS]).slice(0, len ?? 4);
-  if (attr === "size") return shuffle([...SIZES]); // period 3
+function cycleFor(attr: Attr): (number | string)[] {
+  if (attr === "fill") return shuffle([...FILLS]); // period 2 — repeat is visible
+  if (attr === "rotation") {
+    // MUST be a steady progression, not a random permutation: with period 4 over
+    // 4 prompt cells no value repeats, so an arbitrary order leaves the solver
+    // no inferable rule at all.
+    const start = pick(ROTS);
+    const step = pick([90, 270]); // clockwise or counter-clockwise
+    return [0, 1, 2, 3].map(
+      (i) => ((start + step * i) % 360) as Rotation,
+    );
+  }
+  if (attr === "size") return shuffle([...SIZES]); // period 3 — repeat is visible
   if (attr === "count") return shuffle([1, 2, 3]); // period 3 (avoid 4-overflow)
   return shuffle([...KINDS]).slice(0, 3);
 }

@@ -190,6 +190,37 @@ export async function upsertReviewCard(card: ReviewCardRecord): Promise<void> {
   }
 }
 
+// ------------------------------- Recently-seen items -------------------------------
+// Remembered across assessments so a retake doesn't serve the same questions
+// (which would show practice effects as cognitive improvement).
+
+const LS_SEEN = "cog:seenquestions";
+const SEEN_CAP = 150;
+
+export function getRecentQuestionIds(): string[] {
+  if (!hasWindow()) return [];
+  try {
+    return JSON.parse(localStorage.getItem(LS_SEEN) ?? "[]") as string[];
+  } catch {
+    return [];
+  }
+}
+
+export function addRecentQuestionIds(ids: string[]): void {
+  if (!hasWindow() || ids.length === 0) return;
+  try {
+    const merged = [...getRecentQuestionIds(), ...ids];
+    // keep the most recent, de-duplicated
+    const unique = [...new Set(merged.reverse())].reverse();
+    localStorage.setItem(
+      LS_SEEN,
+      JSON.stringify(unique.slice(-SEEN_CAP)),
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
 // ------------------------------- Practice-day log -------------------------------
 // A local (per-device) log of days the learner practiced, used for streaks.
 // Kept in localStorage for now; can move to Supabase later.

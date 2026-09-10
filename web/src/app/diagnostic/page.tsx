@@ -13,7 +13,12 @@ import {
   updateTheta,
 } from "@/lib/diagnostic";
 import { generateAbstractItem, typeForStep } from "@/lib/abstract/generate";
-import { saveDiagnostic, upsertReviewCard } from "@/lib/data";
+import {
+  addRecentQuestionIds,
+  getRecentQuestionIds,
+  saveDiagnostic,
+  upsertReviewCard,
+} from "@/lib/data";
 import { newCardRecord } from "@/lib/fsrs";
 import { useI18n } from "@/i18n/context";
 import { QuestionCard } from "@/components/question-card";
@@ -85,6 +90,7 @@ export default function DiagnosticPage() {
   const schedule = useRef<SkillKey[]>([]);
   const abstractSeen = useRef(0);
   const shownAt = useRef<number>(0);
+  const recent = useRef<Set<string>>(new Set());
 
   function pickFor(s: number): Item | null {
     const skill = schedule.current[s];
@@ -103,6 +109,7 @@ export default function DiagnosticPage() {
       questionsBySkill(skill, locale),
       seen.current[skill],
       thetas.current[skill],
+      recent.current,
     );
     return q ? { kind: "text", q } : null;
   }
@@ -113,6 +120,7 @@ export default function DiagnosticPage() {
     items.current = [];
     abstractSeen.current = 0;
     schedule.current = buildSchedule();
+    recent.current = new Set(getRecentQuestionIds());
     setCurrent(pickFor(0));
     setStep(0);
     shownAt.current = Date.now();
@@ -173,6 +181,12 @@ export default function DiagnosticPage() {
       items: items.current,
     };
     await saveDiagnostic(result);
+    // Remember the authored items served, so the next assessment picks others.
+    addRecentQuestionIds(
+      items.current
+        .filter((i) => i.skill !== "abstract")
+        .map((i) => i.questionId),
+    );
     // Seed spaced-repetition cards from text mistakes (abstract items are
     // procedurally generated and practiced via the endless /abstract session).
     const wrong = items.current.filter(

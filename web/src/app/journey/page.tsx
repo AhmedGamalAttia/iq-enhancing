@@ -15,6 +15,7 @@ import {
   computeStreak,
   daysSince,
 } from "@/lib/progress";
+import { isReliable } from "@/lib/diagnostic";
 import { SKILLS } from "@/data/skills";
 import { useI18n } from "@/i18n/context";
 import { Onboarding } from "@/components/onboarding";
@@ -157,15 +158,25 @@ export default function JourneyPage() {
               <div className="mb-4 grid gap-2">
                 {estimates.map((est) => {
                   const skill = SKILLS[est.skill as SkillKey];
+                  const reliable = isReliable(est);
                   return (
                     <div key={est.skill} className="flex items-center gap-3">
                       <span className="w-6 text-center">{skill.icon}</span>
                       <span className="w-28 shrink-0 truncate text-xs text-fg-muted">
                         {t.skills[est.skill as SkillKey].name}
                       </span>
-                      <ProgressBar value={est.score} color={skill.accent} className="flex-1" />
-                      <span className="w-8 text-end text-xs font-bold" style={{ color: skill.accent }}>
-                        {est.score}
+                      <ProgressBar
+                        value={reliable ? est.score : 0}
+                        color={skill.accent}
+                        className="flex-1"
+                      />
+                      <span
+                        dir="ltr"
+                        className="w-8 text-end text-xs font-bold"
+                        style={{ color: reliable ? skill.accent : "var(--fg-faint)" }}
+                        title={reliable ? undefined : t.results.lowConfidence}
+                      >
+                        {reliable ? est.score : "—"}
                       </span>
                     </div>
                   );

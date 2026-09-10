@@ -3,8 +3,22 @@ import type { Cell, Shape } from "@/lib/abstract/types";
 // Renders a Cell (a set of monochrome shapes) as a self-contained SVG tile.
 // Foreground color only — no rule ever depends on color.
 
-const SLOT: Record<number, number> = { 1: 30, 2: 19, 3: 15, 4: 17 };
 const SIZE_MUL: Record<number, number> = { 1: 0.72, 2: 1, 3: 1.28 };
+
+// Smallest distance between two shape centres for each count. The radius is
+// derived from this so shapes can never touch — otherwise adjacent solid shapes
+// merge into one bar and the *count* becomes unreadable, which silently
+// invalidates the item.
+const SPACING: Record<number, number> = { 1: Infinity, 2: 44, 3: 32, 4: 40 };
+const CLEARANCE = 0.42; // r ≤ 0.42 × spacing ⇒ ≥16% gap between neighbours
+const MAX_R = 34; // keep the largest single shape inside the tile
+
+/** Largest size fits exactly at the clearance cap; smaller sizes stay in ratio. */
+function radiusFor(count: number, size: number): number {
+  const cap = Math.min((SPACING[count] ?? 40) * CLEARANCE, MAX_R);
+  const base = cap / SIZE_MUL[3];
+  return base * (SIZE_MUL[size] ?? 1);
+}
 
 function positions(count: number): [number, number][] {
   switch (count) {
@@ -12,21 +26,21 @@ function positions(count: number): [number, number][] {
       return [[50, 50]];
     case 2:
       return [
-        [31, 50],
-        [69, 50],
+        [28, 50],
+        [72, 50],
       ];
     case 3:
       return [
-        [25, 50],
+        [18, 50],
         [50, 50],
-        [75, 50],
+        [82, 50],
       ];
     case 4:
       return [
-        [32, 32],
-        [68, 32],
-        [32, 68],
-        [68, 68],
+        [30, 30],
+        [70, 30],
+        [30, 70],
+        [70, 70],
       ];
     default:
       return [[50, 50]];
@@ -106,15 +120,21 @@ export function AbstractFigure({
 }) {
   const count = Math.min(4, Math.max(1, cell.shapes.length));
   const pos = positions(count);
-  const slot = SLOT[count] ?? 24;
 
   return (
     <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true">
       <rect x={2} y={2} width={96} height={96} rx={12} fill="var(--surface-2)" />
       {cell.shapes.slice(0, 4).map((shape, i) => {
         const [cx, cy] = pos[i] ?? [50, 50];
-        const r = slot * (SIZE_MUL[shape.size] ?? 1);
-        return <ShapeMark key={i} shape={shape} cx={cx} cy={cy} r={r} />;
+        return (
+          <ShapeMark
+            key={i}
+            shape={shape}
+            cx={cx}
+            cy={cy}
+            r={radiusFor(count, shape.size)}
+          />
+        );
       })}
     </svg>
   );

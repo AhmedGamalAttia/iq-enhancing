@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { DiagnosticResult, SkillEstimate, SkillKey } from "@/lib/types";
 import { getDiagnosticHistory, getLatestDiagnostic } from "@/lib/data";
-import { scoreBand } from "@/lib/diagnostic";
+import { isReliable, scoreBand } from "@/lib/diagnostic";
 import { SKILLS } from "@/data/skills";
 import { useI18n } from "@/i18n/context";
 import { ProgressTrend } from "@/components/progress-trend";
@@ -32,9 +32,12 @@ export default function ResultsPage() {
     [result],
   );
 
+  // Only skills with enough items may drive the recommendation — otherwise the
+  // advice is decided by how many questions a skill got, not by ability.
   const weakest = useMemo(() => {
-    if (estimates.length === 0) return null;
-    return [...estimates].sort((a, b) => a.score - b.score)[0];
+    const reliable = estimates.filter(isReliable);
+    if (reliable.length === 0) return null;
+    return [...reliable].sort((a, b) => a.score - b.score)[0];
   }, [estimates]);
 
   if (loading) {
@@ -79,6 +82,7 @@ export default function ResultsPage() {
           const skill = SKILLS[est.skill as SkillKey];
           const meta = t.skills[est.skill as SkillKey];
           const band = scoreBand(est.score);
+          const reliable = isReliable(est);
           return (
             <Card key={est.skill} className="animate-rise p-6">
               <div className="mb-3 flex items-center justify-between gap-3">
@@ -90,16 +94,30 @@ export default function ResultsPage() {
                   </div>
                 </div>
                 <div className="text-end">
-                  <div className="text-2xl font-extrabold" style={{ color: skill.accent }}>
-                    {est.score}
-                    <span className="text-sm text-fg-faint">{t.results.outOf100}</span>
-                  </div>
-                  <Badge tone={band.tone}>{t.bands[band.key]}</Badge>
+                  {reliable ? (
+                    <>
+                      <div
+                        dir="ltr"
+                        className="text-2xl font-extrabold"
+                        style={{ color: skill.accent }}
+                      >
+                        {est.score}
+                        <span className="text-sm text-fg-faint">
+                          {t.results.outOf100}
+                        </span>
+                      </div>
+                      <Badge tone={band.tone}>{t.bands[band.key]}</Badge>
+                    </>
+                  ) : (
+                    <Badge tone="muted">{t.results.lowConfidence}</Badge>
+                  )}
                 </div>
               </div>
-              <ProgressBar value={est.score} color={skill.accent} />
+              {reliable && <ProgressBar value={est.score} color={skill.accent} />}
               <p className="mt-2 text-xs text-fg-faint">
-                {t.results.correctOfTotal(est.correct, est.total)}
+                {reliable
+                  ? t.results.correctOfTotal(est.correct, est.total)
+                  : t.results.lowConfidenceHint}
               </p>
             </Card>
           );

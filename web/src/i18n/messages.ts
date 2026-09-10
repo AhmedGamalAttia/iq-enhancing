@@ -73,6 +73,8 @@ export interface Messages {
     trendAvgLabel: string;
     trendChangeTitle: string;
     trendHistoryTitle: string;
+    lowConfidence: string;
+    lowConfidenceHint: string;
   };
   practice: {
     title: string;
@@ -310,6 +312,9 @@ const ar: Messages = {
     trendAvgLabel: "متوسّط الدرجة",
     trendChangeTitle: "التغيّر منذ أول تقييم",
     trendHistoryTitle: "سجل التقييمات",
+    lowConfidence: "بيانات غير كافية",
+    lowConfidenceHint:
+      "عدد الأسئلة في هذا المحور قليل، فلا نعرض درجة قد تكون مضلّلة. زد تدريبك عليه أو أعد التقييم لاحقاً.",
   },
   practice: {
     title: "التدريب",
@@ -601,6 +606,9 @@ const en: Messages = {
     trendAvgLabel: "Average score",
     trendChangeTitle: "Change since first assessment",
     trendHistoryTitle: "Assessment history",
+    lowConfidence: "Not enough data",
+    lowConfidenceHint:
+      "Too few questions in this dimension to report a score that wouldn't mislead. Practise it or re-assess later.",
   },
   practice: {
     title: "Practice",

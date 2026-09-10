@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Question } from "@/lib/types";
 import { SKILLS } from "@/data/skills";
+import { seededOrder } from "@/lib/shuffle";
 import { useI18n } from "@/i18n/context";
 import { Button, Card, cn } from "@/components/ui";
 
@@ -27,7 +28,17 @@ export function QuestionCard({
 
   const meta = SKILLS[question.skill];
   const skillName = t.skills[question.skill].name;
-  const correct = chosen !== null && chosen === question.answer;
+
+  // Options are shown in a shuffled order so the bank's answer-position bias
+  // can't be exploited. `chosen` is a DISPLAY index; `order[chosen]` maps back
+  // to the original index used for scoring and logging.
+  const order = useMemo(
+    () => seededOrder(question.choices.length, question.id),
+    [question.id, question.choices.length],
+  );
+  const displayChoices = order.map((i) => question.choices[i]);
+  const correctDisplay = order.indexOf(question.answer);
+  const correct = chosen !== null && chosen === correctDisplay;
 
   function choose(i: number) {
     if (revealed) return;
@@ -37,7 +48,7 @@ export function QuestionCard({
 
   function handleNext() {
     if (chosen === null) return;
-    onNext(chosen === question.answer, chosen);
+    onNext(chosen === correctDisplay, order[chosen]);
   }
 
   async function explainWithAI() {
@@ -48,9 +59,9 @@ export function QuestionCard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           stem: question.stem,
-          choices: question.choices,
+          choices: displayChoices,
           correctText: question.choices[question.answer],
-          chosenText: chosen !== null ? question.choices[chosen] : undefined,
+          chosenText: chosen !== null ? displayChoices[chosen] : undefined,
           skill: question.skill,
           locale,
         }),
@@ -91,9 +102,9 @@ export function QuestionCard({
       </h2>
 
       <div className="grid gap-3">
-        {question.choices.map((choice, i) => {
+        {displayChoices.map((choice, i) => {
           const isChosen = chosen === i;
-          const isCorrect = i === question.answer;
+          const isCorrect = i === correctDisplay;
           const showState = revealed;
           return (
             <button

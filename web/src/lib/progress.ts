@@ -1,5 +1,7 @@
 // Progress helpers for the journey hub.
 
+import { MIN_RELIABLE_ITEMS } from "@/lib/diagnostic";
+
 function dayKey(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -35,13 +37,19 @@ export function daysSince(iso: string, now: Date = new Date()): number {
 
 export const REASSESS_INTERVAL_DAYS = 14;
 
-/** Mean of the per-skill scores in a diagnostic's estimates (0..100). */
+/**
+ * Mean of the per-skill scores in a diagnostic's estimates (0..100).
+ * Skills with too few items are excluded — their scores are trapped near the
+ * middle and would flatten the trend line.
+ */
 export function avgScore(
-  estimates: Record<string, { score: number } | undefined>,
+  estimates: Record<string, { score: number; total?: number } | undefined>,
 ): number {
-  const scores = Object.values(estimates)
-    .filter((e): e is { score: number } => !!e)
-    .map((e) => e.score);
+  const all = Object.values(estimates).filter(
+    (e): e is { score: number; total?: number } => !!e,
+  );
+  const reliable = all.filter((e) => (e.total ?? Infinity) >= MIN_RELIABLE_ITEMS);
+  const scores = (reliable.length > 0 ? reliable : all).map((e) => e.score);
   if (scores.length === 0) return 0;
   return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
 }

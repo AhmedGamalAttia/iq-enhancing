@@ -80,17 +80,29 @@ export function selectNextQuestion(
   pool: Question[],
   seenIds: Set<string>,
   theta: number,
+  recentIds?: Set<string>,
 ): Question | null {
   const candidates = pool.filter((q) => !seenIds.has(q.id));
   if (candidates.length === 0) return null;
+
+  // Prefer items the learner hasn't met in recent assessments, so a retake
+  // measures ability rather than memory of the same questions.
+  const fresh = recentIds
+    ? candidates.filter((q) => !recentIds.has(q.id))
+    : [];
+  const usable = fresh.length > 0 ? fresh : candidates;
+
   const target = Math.round(theta);
-  candidates.sort((a, b) => {
-    const da = Math.abs(a.difficulty - target);
-    const db = Math.abs(b.difficulty - target);
-    if (da !== db) return da - db;
-    return Math.random() - 0.5; // tie-break randomly
-  });
-  return candidates[0];
+  let closest = Infinity;
+  for (const q of usable) {
+    closest = Math.min(closest, Math.abs(q.difficulty - target));
+  }
+  // Uniform pick among the equally-informative items (a `Math.random() - 0.5`
+  // comparator is not a uniform shuffle and barely varies the selection).
+  const ties = usable.filter(
+    (q) => Math.abs(q.difficulty - target) === closest,
+  );
+  return ties[Math.floor(Math.random() * ties.length)];
 }
 
 /** Map an ability estimate to a friendly 0..100 score (scale-aware). */
@@ -99,6 +111,20 @@ export function thetaToScore(
   scale: SkillScale = TEXT_SCALE,
 ): number {
   return Math.round(((theta - scale.min) / (scale.max - scale.min)) * 100);
+}
+
+/**
+ * Below this many items an estimate is too noisy to report. Because theta can
+ * move at most `k` per item, a 2-item skill is mathematically trapped near the
+ * middle (≈37–63) — it can never read "advanced" or "beginner" no matter how
+ * the learner performs — so showing an X/100 with a band would be misleading,
+ * and it must not drive the "weakest skill" recommendation either.
+ * At 4 items the attainable range is ≈18–82, which is usable.
+ */
+export const MIN_RELIABLE_ITEMS = 4;
+
+export function isReliable(est: { total: number }): boolean {
+  return est.total >= MIN_RELIABLE_ITEMS;
 }
 
 export type BandKey =
