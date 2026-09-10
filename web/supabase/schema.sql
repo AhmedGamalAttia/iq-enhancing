@@ -125,6 +125,17 @@ create policy "read leaderboard" on public.daily_scores for select using (true);
 -- submit_daily_score() only.
 drop policy if exists "own daily score" on public.daily_scores;
 
+-- Repair rows written under the old client-asserted formula before the
+-- constraint is enforced (clamp + recompute; nobody's history is deleted).
+update public.daily_scores set
+  correct      = least(10, greatest(0, correct)),
+  time_ms      = least(3600000, greatest(1000, time_ms)),
+  display_name = coalesce(left(nullif(btrim(display_name), ''), 24), 'Player');
+
+update public.daily_scores
+   set score = correct * 10000 - least(9999, round(time_ms / 100.0)::int)
+ where score <> correct * 10000 - least(9999, round(time_ms / 100.0)::int);
+
 -- Defence in depth: even the security-definer function can't store nonsense.
 do $$
 begin
