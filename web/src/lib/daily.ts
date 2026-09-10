@@ -29,6 +29,50 @@ export function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+const LS_DAYS = "cog:daily:days";
+
+function getLocalDays(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(LS_DAYS) ?? "[]") as string[];
+  } catch {
+    return [];
+  }
+}
+
+export function logDailyToday(): void {
+  if (typeof window === "undefined") return;
+  const days = getLocalDays();
+  const today = todayKey();
+  if (!days.includes(today)) {
+    days.push(today);
+    try {
+      localStorage.setItem(LS_DAYS, JSON.stringify(days));
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** Days the player completed the daily challenge (Supabase for signed-in). */
+export async function getCompletedDays(): Promise<string[]> {
+  const supabase = createClient();
+  const local = getLocalDays();
+  if (supabase) {
+    const { data: u } = await supabase.auth.getUser();
+    const uid = u.user?.id;
+    if (uid) {
+      const { data } = await supabase
+        .from("daily_scores")
+        .select("date")
+        .eq("user_id", uid);
+      const remote = (data ?? []).map((r) => String(r.date).slice(0, 10));
+      return Array.from(new Set([...remote, ...local]));
+    }
+  }
+  return local;
+}
+
 /** Accuracy-primary, time as tiebreak, in a single sortable number. */
 export function dailyScore(correct: number, timeMs: number): number {
   return correct * 10000 - Math.round(timeMs / 100);

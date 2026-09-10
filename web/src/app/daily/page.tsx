@@ -8,14 +8,23 @@ import {
 } from "@/lib/abstract/generate";
 import {
   dailyScore,
+  getCompletedDays,
   getDisplayName,
   getLeaderboard,
   getRank,
+  logDailyToday,
   setDisplayName,
   submitDailyScore,
   type DailyEntry,
 } from "@/lib/daily";
 import { getUserId, logPracticeToday } from "@/lib/data";
+import { computeStreak } from "@/lib/progress";
+import {
+  BADGES,
+  addEarnedBadges,
+  evaluateBadges,
+  getEarnedBadges,
+} from "@/lib/badges";
 import { useI18n } from "@/i18n/context";
 import { AbstractQuestionCard } from "@/components/abstract-question-card";
 import { Badge, Button, ButtonLink, Card, cn } from "@/components/ui";
@@ -45,6 +54,9 @@ export default function DailyPage() {
   } | null>(null);
   const [posted, setPosted] = useState(true);
   const [myId, setMyId] = useState<string | null>(null);
+  const [streak, setStreak] = useState(0);
+  const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
+  const [newBadges, setNewBadges] = useState<string[]>([]);
 
   const items = useRef<AbstractItem[]>([]);
   const startAt = useRef(0);
@@ -53,6 +65,8 @@ export default function DailyPage() {
   useEffect(() => {
     setName(getDisplayName());
     getUserId().then(setMyId);
+    setEarnedBadges(getEarnedBadges());
+    getCompletedDays().then((days) => setStreak(computeStreak(days)));
   }, []);
 
   useEffect(() => {
@@ -96,6 +110,21 @@ export default function DailyPage() {
     const [b, r] = await Promise.all([getLeaderboard(), getRank(score)]);
     setBoard(b);
     if (posted) setRank(r);
+
+    // Streak + badges.
+    logDailyToday();
+    const days = await getCompletedDays();
+    const s = computeStreak(days);
+    setStreak(s);
+    const earnedNow = evaluateBadges({
+      correct: c,
+      total,
+      timeMs,
+      streak: s,
+      rank: posted && r ? r.rank : null,
+    });
+    setNewBadges(addEarnedBadges(earnedNow));
+    setEarnedBadges(getEarnedBadges());
   }
 
   const current = items.current[step];
@@ -109,6 +138,12 @@ export default function DailyPage() {
           <p className="mx-auto mb-6 max-w-md leading-relaxed text-fg-muted">
             {t.daily.intro}
           </p>
+          {streak > 0 && (
+            <div className="mb-6">
+              <Badge tone="warning">{t.daily.streakDays(streak)}</Badge>
+              <p className="mt-2 text-xs text-fg-faint">{t.daily.keepStreak}</p>
+            </div>
+          )}
           <div className="mx-auto mb-6 max-w-xs text-start">
             <label className="mb-1 block text-sm font-semibold">
               {t.daily.nameLabel}
@@ -155,7 +190,12 @@ export default function DailyPage() {
         <div className="animate-rise">
           <Card className="p-8 text-center">
             <div className="mb-2 text-4xl">🏆</div>
-            <h2 className="mb-5 text-xl font-bold">{t.daily.doneTitle}</h2>
+            <h2 className="mb-3 text-xl font-bold">{t.daily.doneTitle}</h2>
+            {streak > 0 && (
+              <div className="mb-4">
+                <Badge tone="warning">{t.daily.streakDays(streak)}</Badge>
+              </div>
+            )}
 
             <div className="mb-5 grid grid-cols-3 gap-2 text-sm">
               <Stat
@@ -180,6 +220,38 @@ export default function DailyPage() {
               <p className="mb-2 text-sm text-fg-muted">{t.daily.guestNote}</p>
             )}
             <p className="text-xs text-fg-faint">{t.daily.comeBack}</p>
+          </Card>
+
+          {/* Badges */}
+          <Card className="mt-4 p-6">
+            <h3 className="mb-3 font-bold">🏅 {t.daily.badgesTitle}</h3>
+            <div className="grid grid-cols-4 gap-3">
+              {BADGES.map((b) => {
+                const earned = earnedBadges.includes(b.id);
+                const isNew = newBadges.includes(b.id);
+                return (
+                  <div
+                    key={b.id}
+                    className={cn(
+                      "relative rounded-xl border p-2 text-center",
+                      earned
+                        ? "border-brand/30 bg-brand-soft"
+                        : "border-border-soft opacity-40",
+                    )}
+                  >
+                    <div className="text-2xl">{b.emoji}</div>
+                    <div className="mt-1 text-[10px] leading-tight text-fg-muted">
+                      {t.daily.badgeNames[b.id]}
+                    </div>
+                    {isNew && (
+                      <span className="absolute -top-1 -end-1 rounded-full bg-brand px-1.5 py-0.5 text-[9px] font-bold text-white">
+                        {t.daily.newBadge}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </Card>
 
           {/* Leaderboard */}

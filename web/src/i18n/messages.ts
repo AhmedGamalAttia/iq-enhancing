@@ -207,6 +207,11 @@ export interface Messages {
     emptyBoard: string;
     comeBack: string;
     toJourney: string;
+    streakDays: (n: number) => string;
+    keepStreak: string;
+    badgesTitle: string;
+    newBadge: string;
+    badgeNames: Record<string, string>;
   };
   bands: {
     advanced: string;
@@ -444,6 +449,20 @@ const ar: Messages = {
     emptyBoard: "كن أول المتصدّرين اليوم!",
     comeBack: "ارجع بكرة لتحدّي جديد.",
     toJourney: "رجوع لرحلتي",
+    streakDays: (n) => `🔥 ${n} يوم متتالي`,
+    keepStreak: "لا تكسر السلسلة — ارجع كل يوم!",
+    badgesTitle: "شاراتك",
+    newBadge: "جديدة!",
+    badgeNames: {
+      first: "أول تحدّي",
+      perfect: "علامة كاملة",
+      speedy: "سريع ودقيق",
+      streak3: "٣ أيام متتالية",
+      streak7: "أسبوع كامل",
+      streak30: "شهر كامل",
+      podium: "منصّة التتويج",
+      champion: "بطل اليوم",
+    },
   },
   bands: {
     advanced: "متقدّم",
@@ -712,6 +731,20 @@ const en: Messages = {
     emptyBoard: "Be the first on today's board!",
     comeBack: "Come back tomorrow for a new challenge.",
     toJourney: "Back to my journey",
+    streakDays: (n) => `🔥 ${n}-day streak`,
+    keepStreak: "Don't break the streak — come back every day!",
+    badgesTitle: "Your badges",
+    newBadge: "New!",
+    badgeNames: {
+      first: "First challenge",
+      perfect: "Perfect score",
+      speedy: "Fast & accurate",
+      streak3: "3-day streak",
+      streak7: "Full week",
+      streak30: "Full month",
+      podium: "On the podium",
+      champion: "Champion of the day",
+    },
   },
   bands: {
     advanced: "Advanced",
