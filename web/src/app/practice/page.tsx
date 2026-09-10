@@ -227,7 +227,7 @@ export default function PracticePage() {
               onChange={(e) => setGenSkill(e.target.value as SkillKey)}
               className="h-10 rounded-lg border border-border bg-surface px-3 text-sm"
             >
-              {SKILL_LIST.map((s) => (
+              {SKILL_LIST.filter((s) => s.key !== "abstract").map((s) => (
                 <option key={s.key} value={s.key}>
                   {t.skills[s.key].name}
                 </option>

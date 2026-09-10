@@ -4,6 +4,7 @@ import type { Skill, SkillKey } from "@/lib/types";
 // live in the i18n messages (`messages.skills[key]`); here we keep only the
 // language-independent icon and accent color.
 export const SKILLS: Record<SkillKey, Skill> = {
+  abstract: { key: "abstract", icon: "◈", accent: "#a78bfa" },
   logical: { key: "logical", icon: "🧩", accent: "#7c6cff" },
   verbal: { key: "verbal", icon: "📖", accent: "#2dd4bf" },
   working_memory: { key: "working_memory", icon: "🧠", accent: "#f59e0b" },

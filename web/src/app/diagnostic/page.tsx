@@ -2,41 +2,70 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type {
-  DiagnosticItem,
-  Question,
-  SkillKey,
-} from "@/lib/types";
+import type { DiagnosticItem, Question, SkillKey } from "@/lib/types";
+import type { AbstractItem } from "@/lib/abstract/types";
 import { questionsBySkill } from "@/data/questions";
-import { SKILL_LIST } from "@/data/skills";
+import { SKILLS } from "@/data/skills";
 import {
-  START_THETA,
+  SKILL_SCALE,
   estimateFromItems,
   selectNextQuestion,
   updateTheta,
 } from "@/lib/diagnostic";
+import { generateAbstractItem, typeForStep } from "@/lib/abstract/generate";
 import { saveDiagnostic, upsertReviewCard } from "@/lib/data";
 import { newCardRecord } from "@/lib/fsrs";
 import { useI18n } from "@/i18n/context";
 import { QuestionCard } from "@/components/question-card";
+import { AbstractQuestionCard } from "@/components/abstract-question-card";
 import { Button, ButtonLink, Card } from "@/components/ui";
 
-const SKILL_ORDER: SkillKey[] = [
-  "logical",
-  "verbal",
-  "working_memory",
-  "numeracy",
-  "critical",
-];
-const PER_SKILL = 4;
-const TOTAL = SKILL_ORDER.length * PER_SKILL;
+// Weighted schedule — the fair, culture-free abstract dimension dominates;
+// the culturally-loaded verbal/critical dimensions are de-weighted.
+// (working_memory is measured better by the interactive n-back task.)
+const WEIGHTS: Partial<Record<SkillKey, number>> = {
+  abstract: 8,
+  logical: 4,
+  numeracy: 4,
+  verbal: 2,
+  critical: 2,
+};
+const SKILL_ORDER = Object.keys(WEIGHTS) as SkillKey[];
+const TOTAL = SKILL_ORDER.reduce((s, k) => s + (WEIGHTS[k] ?? 0), 0);
+
+/** Even, weighted round-robin so abstract items are spread across the test. */
+function buildSchedule(): SkillKey[] {
+  const counts: Record<string, number> = {};
+  SKILL_ORDER.forEach((k) => (counts[k] = 0));
+  const schedule: SkillKey[] = [];
+  for (let i = 0; i < TOTAL; i++) {
+    let best: SkillKey | null = null;
+    let bestRatio = Infinity;
+    for (const k of SKILL_ORDER) {
+      const w = WEIGHTS[k] ?? 0;
+      if (counts[k] >= w) continue;
+      const ratio = counts[k] / w;
+      if (ratio < bestRatio) {
+        bestRatio = ratio;
+        best = k;
+      }
+    }
+    if (!best) break;
+    schedule.push(best);
+    counts[best] += 1;
+  }
+  return schedule;
+}
+
+type Item =
+  | { kind: "text"; q: Question }
+  | { kind: "abstract"; a: AbstractItem };
 
 function initThetas(): Record<SkillKey, number> {
   return Object.fromEntries(
-    SKILL_ORDER.map((k) => [k, START_THETA]),
+    SKILL_ORDER.map((k) => [k, SKILL_SCALE[k].start]),
   ) as Record<SkillKey, number>;
 }
-
 function initSeen(): Record<SkillKey, Set<string>> {
   return Object.fromEntries(
     SKILL_ORDER.map((k) => [k, new Set<string>()]),
@@ -48,34 +77,43 @@ export default function DiagnosticPage() {
   const { t, locale } = useI18n();
   const [phase, setPhase] = useState<"intro" | "running" | "saving">("intro");
   const [step, setStep] = useState(0);
-  const [current, setCurrent] = useState<Question | null>(null);
+  const [current, setCurrent] = useState<Item | null>(null);
 
-  // Mutable engine state kept in refs to avoid stale closures.
   const thetas = useRef<Record<SkillKey, number>>(initThetas());
   const seen = useRef<Record<SkillKey, Set<string>>>(initSeen());
   const items = useRef<DiagnosticItem[]>([]);
+  const schedule = useRef<SkillKey[]>([]);
+  const abstractSeen = useRef(0);
   const shownAt = useRef<number>(0);
 
-  function skillForStep(s: number): SkillKey {
-    return SKILL_ORDER[s % SKILL_ORDER.length];
-  }
-
-  function pickFor(s: number): Question | null {
-    const skill = skillForStep(s);
+  function pickFor(s: number): Item | null {
+    const skill = schedule.current[s];
+    if (skill === "abstract") {
+      const scale = SKILL_SCALE.abstract;
+      const diff = Math.min(
+        scale.max,
+        Math.max(scale.min, Math.round(thetas.current.abstract)),
+      );
+      return {
+        kind: "abstract",
+        a: generateAbstractItem(typeForStep(abstractSeen.current), diff),
+      };
+    }
     const q = selectNextQuestion(
       questionsBySkill(skill, locale),
       seen.current[skill],
       thetas.current[skill],
     );
-    return q;
+    return q ? { kind: "text", q } : null;
   }
 
   function start() {
     thetas.current = initThetas();
     seen.current = initSeen();
     items.current = [];
-    const first = pickFor(0);
-    setCurrent(first);
+    abstractSeen.current = 0;
+    schedule.current = buildSchedule();
+    setCurrent(pickFor(0));
     setStep(0);
     shownAt.current = Date.now();
     setPhase("running");
@@ -83,21 +121,29 @@ export default function DiagnosticPage() {
 
   async function onNext(correct: boolean, chosen: number) {
     if (!current) return;
-    const skill = current.skill;
+    const skill: SkillKey = current.kind === "text" ? current.q.skill : "abstract";
+    const id = current.kind === "text" ? current.q.id : current.a.id;
+    const difficulty =
+      current.kind === "text" ? current.q.difficulty : current.a.difficulty;
+    const idx = seen.current[skill].size;
+
     items.current.push({
-      questionId: current.id,
+      questionId: id,
       skill,
-      difficulty: current.difficulty,
+      difficulty,
       chosen,
       correct,
       msTaken: Date.now() - shownAt.current,
     });
     thetas.current[skill] = updateTheta(
       thetas.current[skill],
-      current.difficulty,
+      difficulty,
       correct,
+      SKILL_SCALE[skill],
+      idx,
     );
-    seen.current[skill].add(current.id);
+    seen.current[skill].add(id);
+    if (skill === "abstract") abstractSeen.current += 1;
 
     const nextStep = step + 1;
     if (nextStep >= TOTAL) {
@@ -127,8 +173,11 @@ export default function DiagnosticPage() {
       items: items.current,
     };
     await saveDiagnostic(result);
-    // Seed spaced-repetition cards from mistakes.
-    const wrong = items.current.filter((i) => !i.correct);
+    // Seed spaced-repetition cards from text mistakes (abstract items are
+    // procedurally generated and practiced via the endless /abstract session).
+    const wrong = items.current.filter(
+      (i) => !i.correct && i.skill !== "abstract",
+    );
     for (const item of wrong) {
       await upsertReviewCard(newCardRecord(item.questionId, item.skill));
     }
@@ -147,17 +196,17 @@ export default function DiagnosticPage() {
             {t.diagnostic.intro(TOTAL)}
           </p>
           <div className="mb-6 flex flex-wrap justify-center gap-2">
-            {SKILL_LIST.map((s) => (
+            {SKILL_ORDER.map((k) => (
               <span
-                key={s.key}
+                key={k}
                 className="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold"
                 style={{
-                  color: s.accent,
-                  borderColor: `${s.accent}55`,
-                  background: `${s.accent}14`,
+                  color: SKILLS[k].accent,
+                  borderColor: `${SKILLS[k].accent}55`,
+                  background: `${SKILLS[k].accent}14`,
                 }}
               >
-                <span>{s.icon}</span> {t.skills[s.key].name}
+                <span>{SKILLS[k].icon}</span> {t.skills[k].name}
               </span>
             ))}
           </div>
@@ -176,14 +225,25 @@ export default function DiagnosticPage() {
               style={{ width: `${progress}%` }}
             />
           </div>
-          <QuestionCard
-            key={current.id}
-            question={current}
-            index={step}
-            total={TOTAL}
-            mode="assess"
-            onNext={onNext}
-          />
+          {current.kind === "text" ? (
+            <QuestionCard
+              key={current.q.id}
+              question={current.q}
+              index={step}
+              total={TOTAL}
+              mode="assess"
+              onNext={onNext}
+            />
+          ) : (
+            <AbstractQuestionCard
+              key={current.a.id}
+              item={current.a}
+              index={step}
+              total={TOTAL}
+              mode="assess"
+              onNext={onNext}
+            />
+          )}
         </>
       )}
 

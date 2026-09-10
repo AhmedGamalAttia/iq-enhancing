@@ -15,24 +15,61 @@ import type {
 // calibrated IRT model is a later-phase upgrade.
 // ---------------------------------------------------------------------------
 
-export const START_THETA = 3;
-const K = 0.6; // learning rate of the estimate
-const DISCRIMINATION = 1.2; // how sharply probability changes with the gap
-
-/** Expected probability of a correct answer given ability and difficulty. */
-export function expectedCorrect(theta: number, difficulty: number): number {
-  return 1 / (1 + Math.pow(10, (difficulty - theta) / DISCRIMINATION));
+// Per-skill difficulty scale. Text dimensions use 1..5; the abstract dimension
+// uses a wider 1..10 range (child → expert) with a faster early "calibration"
+// step so it homes in on the right level within a few items.
+export interface SkillScale {
+  min: number;
+  max: number;
+  start: number;
+  k: number; // learning rate
+  fastK: number; // learning rate for the first fastN items
+  fastN: number; // number of fast-calibration items
+  disc: number; // discrimination
 }
 
-/** Update the ability estimate after one response. */
+const TEXT_SCALE: SkillScale = {
+  min: 1,
+  max: 5,
+  start: 3,
+  k: 0.6,
+  fastK: 0.6,
+  fastN: 0,
+  disc: 1.2,
+};
+
+export const SKILL_SCALE: Record<SkillKey, SkillScale> = {
+  logical: TEXT_SCALE,
+  verbal: TEXT_SCALE,
+  working_memory: TEXT_SCALE,
+  numeracy: TEXT_SCALE,
+  critical: TEXT_SCALE,
+  abstract: { min: 1, max: 10, start: 5, k: 0.7, fastK: 1.6, fastN: 3, disc: 1.5 },
+};
+
+export const START_THETA = TEXT_SCALE.start;
+
+/** Expected probability of a correct answer given ability and difficulty. */
+export function expectedCorrect(
+  theta: number,
+  difficulty: number,
+  disc: number = TEXT_SCALE.disc,
+): number {
+  return 1 / (1 + Math.pow(10, (difficulty - theta) / disc));
+}
+
+/** Update the ability estimate after one response (scale-aware). */
 export function updateTheta(
   theta: number,
   difficulty: number,
   correct: boolean,
+  scale: SkillScale = TEXT_SCALE,
+  itemIndex = 999,
 ): number {
-  const expected = expectedCorrect(theta, difficulty);
-  const next = theta + K * ((correct ? 1 : 0) - expected);
-  return Math.min(5, Math.max(1, next));
+  const k = itemIndex < scale.fastN ? scale.fastK : scale.k;
+  const expected = expectedCorrect(theta, difficulty, scale.disc);
+  const next = theta + k * ((correct ? 1 : 0) - expected);
+  return Math.min(scale.max, Math.max(scale.min, next));
 }
 
 /**
@@ -56,12 +93,12 @@ export function selectNextQuestion(
   return candidates[0];
 }
 
-const SCORE_MIN = 1;
-const SCORE_MAX = 5;
-
-/** Map a 1..5 ability estimate to a friendly 0..100 score. */
-export function thetaToScore(theta: number): number {
-  return Math.round(((theta - SCORE_MIN) / (SCORE_MAX - SCORE_MIN)) * 100);
+/** Map an ability estimate to a friendly 0..100 score (scale-aware). */
+export function thetaToScore(
+  theta: number,
+  scale: SkillScale = TEXT_SCALE,
+): number {
+  return Math.round(((theta - scale.min) / (scale.max - scale.min)) * 100);
 }
 
 export type BandKey =
@@ -93,16 +130,17 @@ export function estimateFromItems(
 
   const result: Partial<Record<SkillKey, SkillEstimate>> = {};
   for (const [skill, list] of bySkill) {
-    let theta = START_THETA;
+    const scale = SKILL_SCALE[skill];
+    let theta = scale.start;
     let correct = 0;
-    for (const item of list) {
-      theta = updateTheta(theta, item.difficulty, item.correct);
+    list.forEach((item, idx) => {
+      theta = updateTheta(theta, item.difficulty, item.correct, scale, idx);
       if (item.correct) correct += 1;
-    }
+    });
     result[skill] = {
       skill,
       theta,
-      score: thetaToScore(theta),
+      score: thetaToScore(theta, scale),
       correct,
       total: list.length,
     };

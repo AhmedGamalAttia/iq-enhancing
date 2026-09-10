@@ -409,6 +409,11 @@ const ar: Messages = {
     beginner: "مبتدئ",
   },
   skills: {
+    abstract: {
+      name: "الاستدلال المجرّد",
+      tagline: "أنماط بصرية عادلة — بلا لغة أو ثقافة",
+      desc: "القدرة على اكتشاف الأنماط والعلاقات المجرّدة في الأشكال — مقياس عادل للتفكير لا يعتمد على لغة أو تعليم أو ثقافة.",
+    },
     logical: {
       name: "الاستدلال المنطقي",
       tagline: "الأنماط، الاستنتاج، والقياس المنطقي",
@@ -650,6 +655,11 @@ const en: Messages = {
     beginner: "Beginner",
   },
   skills: {
+    abstract: {
+      name: "Abstract Reasoning",
+      tagline: "Fair visual patterns — no language or culture",
+      desc: "The ability to spot abstract patterns and relations in shapes — a fair measure of reasoning that doesn't depend on language, schooling, or culture.",
+    },
     logical: {
       name: "Logical Reasoning",
       tagline: "Patterns, inference, and logical deduction",
