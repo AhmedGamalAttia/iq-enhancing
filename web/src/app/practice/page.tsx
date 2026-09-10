@@ -10,6 +10,7 @@ import {
   logPracticeToday,
   upsertReviewCard,
 } from "@/lib/data";
+import { hasDoneTodayDaily } from "@/lib/daily";
 import { isDue, newCardRecord, reviewCard } from "@/lib/fsrs";
 import { useI18n } from "@/i18n/context";
 import { QuestionCard } from "@/components/question-card";
@@ -30,6 +31,7 @@ export default function PracticePage() {
   const [genSkill, setGenSkill] = useState<SkillKey>("logical");
   const [genDiff, setGenDiff] = useState(3);
   const [genError, setGenError] = useState<string | null>(null);
+  const [dailyDone, setDailyDone] = useState(false);
 
   const queueRef = useRef<Question[]>([]);
   const cardMap = useRef<Map<string, ReviewCardRecord>>(new Map());
@@ -38,6 +40,10 @@ export default function PracticePage() {
     void buildSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
+
+  useEffect(() => {
+    hasDoneTodayDaily().then(setDailyDone);
+  }, []);
 
   async function buildSession() {
     setPhase("loading");
@@ -159,7 +165,7 @@ export default function PracticePage() {
           <p className="text-xs text-fg-faint">{t.daily.cardHint}</p>
         </div>
         <ButtonLink href="/daily" size="sm">
-          {t.daily.start}
+          {dailyDone ? t.daily.viewResult : t.daily.start}
         </ButtonLink>
       </Card>
 

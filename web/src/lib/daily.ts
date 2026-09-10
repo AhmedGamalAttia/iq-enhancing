@@ -164,6 +164,12 @@ export function getLocalResult(): DailyResult | null {
   }
 }
 
+/** Whether today's daily challenge is already completed (guest or signed-in). */
+export async function hasDoneTodayDaily(): Promise<boolean> {
+  if (getLocalResult()) return true;
+  return (await getMyTodayScore()) !== null;
+}
+
 /** The signed-in user's already-submitted score for today (for the one-a-day gate). */
 export async function getMyTodayScore(): Promise<DailyResult | null> {
   const supabase = createClient();

@@ -196,6 +196,7 @@ export interface Messages {
     nameLabel: string;
     namePlaceholder: string;
     start: string;
+    viewResult: string;
     elapsed: string;
     progress: (i: number, total: number) => string;
     doneTitle: string;
@@ -446,6 +447,7 @@ const ar: Messages = {
     nameLabel: "اسمك في اللوحة",
     namePlaceholder: "لاعب",
     start: "ابدأ التحدّي",
+    viewResult: "شوف نتيجتك",
     elapsed: "الوقت",
     progress: (i, total) => `${i} / ${total}`,
     doneTitle: "خلّصت تحدّي النهاردة! 🎉",
@@ -736,6 +738,7 @@ const en: Messages = {
     nameLabel: "Your name on the board",
     namePlaceholder: "Player",
     start: "Start the challenge",
+    viewResult: "See your result",
     elapsed: "Time",
     progress: (i, total) => `${i} / ${total}`,
     doneTitle: "You finished today's challenge! 🎉",

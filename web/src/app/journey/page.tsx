@@ -7,6 +7,7 @@ import {
   getPracticeDays,
   getReviewCards,
 } from "@/lib/data";
+import { hasDoneTodayDaily } from "@/lib/daily";
 import { questionById } from "@/data/questions";
 import { isDue } from "@/lib/fsrs";
 import {
@@ -27,6 +28,7 @@ export default function JourneyPage() {
   const [diagnostic, setDiagnostic] = useState<DiagnosticResult | null>(null);
   const [dueCount, setDueCount] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [dailyDone, setDailyDone] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -42,6 +44,7 @@ export default function JourneyPage() {
       setDiagnostic(diag);
       setDueCount(due.length);
       setStreak(computeStreak(getPracticeDays()));
+      setDailyDone(await hasDoneTodayDaily());
       setLoading(false);
     }
     void load();
@@ -89,7 +92,7 @@ export default function JourneyPage() {
           <p className="text-xs text-fg-faint">{t.daily.cardHint}</p>
         </div>
         <ButtonLink href="/daily" size="sm">
-          {t.daily.start}
+          {dailyDone ? t.daily.viewResult : t.daily.start}
         </ButtonLink>
       </Card>
 
