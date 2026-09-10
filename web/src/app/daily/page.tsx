@@ -11,8 +11,11 @@ import {
   getCompletedDays,
   getDisplayName,
   getLeaderboard,
+  getLocalResult,
+  getMyTodayScore,
   getRank,
   logDailyToday,
+  saveLocalResult,
   setDisplayName,
   submitDailyScore,
   type DailyEntry,
@@ -64,9 +67,33 @@ export default function DailyPage() {
 
   useEffect(() => {
     setName(getDisplayName());
-    getUserId().then(setMyId);
     setEarnedBadges(getEarnedBadges());
-    getCompletedDays().then((days) => setStreak(computeStreak(days)));
+    let active = true;
+    (async () => {
+      const uid = await getUserId();
+      if (!active) return;
+      setMyId(uid);
+      getCompletedDays().then((days) => active && setStreak(computeStreak(days)));
+
+      // One challenge per day: if already completed today, show the result.
+      let res = getLocalResult();
+      if (!res) {
+        const mine = await getMyTodayScore();
+        if (mine) res = mine;
+      }
+      if (res && active) {
+        setResult(res);
+        setPosted(!!uid);
+        setPhase("done");
+        const [b, r] = await Promise.all([getLeaderboard(), getRank(res.score)]);
+        if (!active) return;
+        setBoard(b);
+        if (uid) setRank(r);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -101,6 +128,7 @@ export default function DailyPage() {
     const score = dailyScore(c, timeMs);
     const res = { correct: c, total, timeMs, score };
     setResult(res);
+    saveLocalResult(res);
     setElapsed(timeMs);
     setPhase("done");
     logPracticeToday();
@@ -274,8 +302,17 @@ export default function DailyPage() {
                       <span className="w-6 text-center font-bold text-fg-faint">
                         {i + 1}
                       </span>
-                      <span className="flex-1 truncate font-semibold">
-                        {mine ? `${row.display_name} (${t.daily.you})` : row.display_name}
+                      <span className="flex-1 truncate">
+                        <span className="font-semibold">
+                          {mine
+                            ? `${row.display_name} (${t.daily.you})`
+                            : row.display_name}
+                        </span>
+                        {row.user_id && (
+                          <span className="ms-1 text-[10px] text-fg-faint">
+                            #{row.user_id.slice(0, 4)}
+                          </span>
+                        )}
                       </span>
                       <span dir="ltr" className="text-xs text-fg-faint">
                         {row.correct}/10 · {fmt(row.time_ms)}

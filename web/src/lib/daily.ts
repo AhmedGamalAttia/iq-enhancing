@@ -94,8 +94,15 @@ export async function submitDailyScore(entry: {
   const supabase = createClient();
   if (!supabase) return { posted: false };
   const { data: u } = await supabase.auth.getUser();
-  const user = u.user;
-  if (!user) return { posted: false };
+  let user = u.user;
+  if (!user) {
+    // Give guests a stable, real id (no email needed) so they can appear on the
+    // board — far more robust than an IP. Requires "Anonymous sign-ins" enabled
+    // in the Supabase dashboard; if it's off, we simply don't post.
+    const { data, error } = await supabase.auth.signInAnonymously();
+    if (error || !data.user) return { posted: false };
+    user = data.user;
+  }
 
   const date = todayKey();
   const name = (
@@ -127,6 +134,56 @@ export async function submitDailyScore(entry: {
     { onConflict: "date,user_id" },
   );
   return { posted: true };
+}
+
+export interface DailyResult {
+  correct: number;
+  total: number;
+  timeMs: number;
+  score: number;
+}
+
+const LS_RESULT = "cog:daily:result";
+
+export function saveLocalResult(r: DailyResult): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(`${LS_RESULT}:${todayKey()}`, JSON.stringify(r));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getLocalResult(): DailyResult | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(`${LS_RESULT}:${todayKey()}`);
+    return raw ? (JSON.parse(raw) as DailyResult) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The signed-in user's already-submitted score for today (for the one-a-day gate). */
+export async function getMyTodayScore(): Promise<DailyResult | null> {
+  const supabase = createClient();
+  if (!supabase) return null;
+  const { data: u } = await supabase.auth.getUser();
+  const uid = u.user?.id;
+  if (!uid) return null;
+  const { data } = await supabase
+    .from("daily_scores")
+    .select("correct, time_ms, score")
+    .eq("date", todayKey())
+    .eq("user_id", uid)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    correct: data.correct as number,
+    total: 10,
+    timeMs: data.time_ms as number,
+    score: data.score as number,
+  };
 }
 
 export async function getLeaderboard(limit = 20): Promise<DailyEntry[]> {
