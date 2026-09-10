@@ -12,6 +12,7 @@ import {
 import { scoreBand } from "@/lib/diagnostic";
 import { logPracticeToday } from "@/lib/data";
 import { useI18n } from "@/i18n/context";
+import { HonestyNote } from "@/components/honesty-note";
 import { AbstractQuestionCard } from "@/components/abstract-question-card";
 import { Badge, Button, ButtonLink, Card, ProgressBar } from "@/components/ui";
 
@@ -116,8 +117,8 @@ export default function AbstractPage() {
 
           <p className="mb-1 text-sm text-fg-faint">{t.abstract.estimatedLevel}</p>
           <div className="mb-2 text-5xl font-extrabold text-brand-ink">
-            {finalScore}
-            <span className="text-lg text-fg-faint">/100</span>
+            {t.num(finalScore)}
+            <span className="text-lg text-fg-faint">/{t.num(100)}</span>
           </div>
           <Badge tone={band.tone}>{t.bands[band.key]}</Badge>
 
@@ -133,6 +134,8 @@ export default function AbstractPage() {
               {t.abstract.toPractice}
             </ButtonLink>
           </div>
+
+          <HonestyNote className="mt-6" />
         </Card>
       )}
     </div>

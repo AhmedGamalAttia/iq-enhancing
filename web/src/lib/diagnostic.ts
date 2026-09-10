@@ -127,6 +127,29 @@ export function isReliable(est: { total: number }): boolean {
   return est.total >= MIN_RELIABLE_ITEMS;
 }
 
+/**
+ * A plausible range for the score, not a point value.
+ *
+ * A single number invites people to read it as an IQ. With an Elo-style updater
+ * the residual uncertainty is roughly `k / √n` in theta units — and never
+ * smaller than about half a step, because the updater itself can't resolve
+ * finer than that. Widened ~1.5× for a band we're comfortable standing behind.
+ */
+export function scoreRange(est: {
+  skill: SkillKey;
+  score: number;
+  total: number;
+}): [number, number] {
+  const scale = SKILL_SCALE[est.skill];
+  const span = scale.max - scale.min;
+  const seTheta = Math.max(scale.k / Math.sqrt(Math.max(1, est.total)), scale.k * 0.5);
+  const half = Math.round(((1.5 * seTheta) / span) * 100);
+  return [
+    Math.max(0, est.score - half),
+    Math.min(100, est.score + half),
+  ];
+}
+
 export type BandKey =
   | "advanced"
   | "veryGood"

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { AbstractItem } from "@/lib/abstract/types";
-import { describeCell } from "@/lib/abstract/describe";
+import { describeCell, describeRule } from "@/lib/abstract/describe";
 import { useI18n } from "@/i18n/context";
 import { AbstractFigure, MissingCell } from "@/components/abstract-figure";
 import { Button, Card, cn } from "@/components/ui";
@@ -167,9 +167,32 @@ export function AbstractQuestionCard({
       </div>
 
       {revealed && (
-        <p className="mt-4 text-sm font-bold" role="status">
-          {correct ? t.abstract.correct : t.abstract.incorrect}
-        </p>
+        <div className="mt-4 animate-rise" role="status">
+          <p className="mb-2 text-sm font-bold">
+            {correct ? t.abstract.correct : t.abstract.incorrect}
+          </p>
+          {/* Naming the rule is the whole point: a bare ✅/❌ tells the learner
+              they were wrong but never what to look for next time. */}
+          {item.rules.length > 0 && (
+            <div className="rounded-xl border border-border-soft bg-surface-2/60 p-4 text-start">
+              <p className="mb-1 text-xs font-bold text-brand-ink">
+                🔑 {t.abstractRules.title}
+              </p>
+              <ul className="grid gap-1">
+                {item.rules.map((rule, i) => (
+                  <li key={i} className="text-sm leading-relaxed text-fg">
+                    {describeRule(rule, t)}
+                  </li>
+                ))}
+              </ul>
+              {!correct && (
+                <p className="mt-2 text-xs leading-relaxed text-fg-muted">
+                  {t.abstractRules.metaTip}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Sticky on phones: the Next button used to sit below the fold on every

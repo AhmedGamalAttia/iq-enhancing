@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { logPracticeToday } from "@/lib/data";
+import { saveWorkingMemory } from "@/lib/wm";
 import { useI18n } from "@/i18n/context";
+import { HonestyNote } from "@/components/honesty-note";
 import { Button, ButtonLink, Card, cn } from "@/components/ui";
 
 const TRIALS = 20;
@@ -18,10 +20,27 @@ interface Stats {
   cr: number;
 }
 
+/**
+ * A sequence with an EXACT, fixed number of targets.
+ *
+ * Drawing each target from a coin flip made rounds incomparable — and a round
+ * that happened to contain no targets at all scored 0 however perfectly it was
+ * played, because the hit rate was 0/0.
+ */
 function genSequence(n: number, trials: number): number[] {
+  const eligible = [];
+  for (let i = n; i < trials; i++) eligible.push(i);
+  const targetCount = Math.max(1, Math.round(trials * TARGET_RATE));
+  // Fisher–Yates, then take the first k positions as the targets.
+  for (let i = eligible.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [eligible[i], eligible[j]] = [eligible[j], eligible[i]];
+  }
+  const targets = new Set(eligible.slice(0, targetCount));
+
   const seq: number[] = [];
   for (let i = 0; i < trials; i++) {
-    if (i >= n && Math.random() < TARGET_RATE) {
+    if (targets.has(i)) {
       seq.push(seq[i - n]); // target: repeat the n-back position
     } else {
       let c: number;
@@ -141,6 +160,12 @@ export default function NBackPage() {
     setPhase("done");
     phaseRef.current = "done";
     logPracticeToday();
+    // This round IS the working-memory measurement for the whole platform.
+    saveWorkingMemory({
+      n: nRef.current,
+      score,
+      at: new Date().toISOString(),
+    });
     try {
       const key = `cog:nback:best:${nRef.current}`;
       const prev = Number(localStorage.getItem(key) ?? 0);
@@ -223,7 +248,7 @@ export default function NBackPage() {
           </div>
           {best != null && (
             <p className="mb-6 text-xs text-fg-faint">
-              {t.nback.bestLabel(nLevel)}: <b className="text-brand-ink">{best}</b>
+              {t.nback.bestLabel(nLevel)}: <b className="text-brand-ink">{t.num(best)}</b>
             </p>
           )}
           <Button size="lg" onClick={start}>
@@ -234,7 +259,9 @@ export default function NBackPage() {
 
       {phase === "countdown" && (
         <Card className="grid place-items-center p-16">
-          <div className="text-6xl font-extrabold text-brand-ink">{countdown}</div>
+          <div className="text-6xl font-extrabold text-brand-ink">
+            {t.num(countdown)}
+          </div>
           <p className="mt-3 text-fg-muted">{t.nback.getReady}</p>
         </Card>
       )}
@@ -286,16 +313,16 @@ export default function NBackPage() {
 
           <div className="mb-4">
             <div dir="ltr" className="text-5xl font-extrabold text-brand-ink">
-              {result.score}
-              <span className="text-lg text-fg-faint">/100</span>
+              {t.num(result.score)}
+              <span className="text-lg text-fg-faint">/{t.num(100)}</span>
             </div>
             <p className="text-xs text-fg-faint">{t.nback.scoreLabel}</p>
           </div>
 
           <div className="mb-5 grid grid-cols-3 gap-2 text-sm">
-            <Stat label={t.nback.hitsLabel} value={result.hits} tone="text-success" />
-            <Stat label={t.nback.missesLabel} value={result.misses} tone="text-warning" />
-            <Stat label={t.nback.falseAlarmsLabel} value={result.fa} tone="text-danger" />
+            <Stat label={t.nback.hitsLabel} value={t.num(result.hits)} tone="text-success" />
+            <Stat label={t.nback.missesLabel} value={t.num(result.misses)} tone="text-warning" />
+            <Stat label={t.nback.falseAlarmsLabel} value={t.num(result.fa)} tone="text-danger" />
           </div>
 
           <p className="mb-6 leading-relaxed text-fg-muted">{interp(result.score)}</p>
@@ -306,6 +333,8 @@ export default function NBackPage() {
               {t.nback.toPractice}
             </ButtonLink>
           </div>
+
+          <HonestyNote className="mt-6" />
         </Card>
       )}
     </div>
@@ -318,7 +347,7 @@ function Stat({
   tone,
 }: {
   label: string;
-  value: number;
+  value: string;
   tone: string;
 }) {
   return (

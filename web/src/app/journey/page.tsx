@@ -18,6 +18,7 @@ import {
 import { isReliable } from "@/lib/diagnostic";
 import { SKILLS } from "@/data/skills";
 import { useI18n } from "@/i18n/context";
+import { HonestyNote } from "@/components/honesty-note";
 import { Onboarding } from "@/components/onboarding";
 import { Badge, ButtonLink, Card, ProgressBar, cn } from "@/components/ui";
 
@@ -183,7 +184,7 @@ export default function JourneyPage() {
                         style={{ color: reliable ? skill.accentText : "var(--fg-faint)" }}
                         title={reliable ? undefined : t.results.lowConfidence}
                       >
-                        {reliable ? est.score : "—"}
+                        {reliable ? t.num(est.score) : "—"}
                       </span>
                     </div>
                   );
@@ -193,6 +194,7 @@ export default function JourneyPage() {
             <ButtonLink href="/results" variant="outline">
               {t.journey.progressCta}
             </ButtonLink>
+            <HonestyNote className="mt-4 text-start" />
           </Stage>
 
           {/* Stage 4 — Re-assess */}

@@ -20,6 +20,7 @@ import {
   submitDailyScore,
   type DailyEntry,
 } from "@/lib/daily";
+import { describeRule } from "@/lib/abstract/describe";
 import { getUserId, logPracticeToday } from "@/lib/data";
 import { computeStreak } from "@/lib/progress";
 import {
@@ -29,6 +30,7 @@ import {
   getEarnedBadges,
 } from "@/lib/badges";
 import { useI18n } from "@/i18n/context";
+import { HonestyNote } from "@/components/honesty-note";
 import { AbstractQuestionCard } from "@/components/abstract-question-card";
 import { Badge, Button, ButtonLink, Card, cn } from "@/components/ui";
 
@@ -234,7 +236,7 @@ export default function DailyPage() {
         <>
           <div className="mb-4 flex items-center justify-between gap-3">
             <Badge tone="brand">
-              ⏱️ {t.daily.elapsed}: <span dir="ltr">{fmt(elapsed)}</span>
+              ⏱️ {t.daily.elapsed}: <span dir="ltr">{t.num(fmt(elapsed))}</span>
             </Badge>
             <span dir="ltr" className="text-sm text-fg-faint">
               {t.daily.progress(step + 1, items.current.length)}
@@ -265,10 +267,10 @@ export default function DailyPage() {
             <div className="mb-5 grid grid-cols-3 gap-2 text-sm">
               <Stat
                 label={t.daily.correctLabel}
-                value={`${result.correct}/${result.total}`}
+                value={`${t.num(result.correct)}/${t.num(result.total)}`}
               />
-              <Stat label={t.daily.timeLabel} value={fmt(result.timeMs)} />
-              <Stat label={t.daily.scoreLabel} value={String(result.score)} />
+              <Stat label={t.daily.timeLabel} value={t.num(fmt(result.timeMs))} />
+              <Stat label={t.daily.scoreLabel} value={t.num(result.score)} />
             </div>
 
             {posted && rank && rank.total > 0 && (
@@ -285,6 +287,38 @@ export default function DailyPage() {
               <p className="mb-2 text-sm text-fg-muted">{t.daily.guestNote}</p>
             )}
             <p className="text-xs text-fg-faint">{t.daily.comeBack}</p>
+            <HonestyNote className="mt-4" />
+          </Card>
+
+          {/* The rules of today's ten puzzles. Regenerated from the day seed, so
+              this works even when the result was restored after a reload. */}
+          <Card className="mt-4 p-6">
+            <h3 className="mb-1 font-bold">🔑 {t.daily.rulesTitle}</h3>
+            <p className="mb-3 text-xs leading-relaxed text-fg-faint">
+              {t.daily.rulesHint}
+            </p>
+            <ol className="grid gap-2">
+              {generateDailyChallenge(dateSeedNumber()).map((it, i) => (
+                <li
+                  key={it.id}
+                  className="rounded-lg border border-border-soft bg-surface-2/40 px-3 py-2"
+                >
+                  <span className="text-xs font-bold text-fg-faint">
+                    {t.daily.itemN(i + 1)}
+                  </span>
+                  <ul className="mt-0.5 grid gap-0.5">
+                    {it.rules.map((rule, j) => (
+                      <li key={j} className="text-sm leading-relaxed">
+                        {describeRule(rule, t)}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-3 text-xs leading-relaxed text-fg-muted">
+              {t.abstractRules.metaTip}
+            </p>
           </Card>
 
           {/* Badges */}
@@ -321,7 +355,10 @@ export default function DailyPage() {
 
           {/* Leaderboard */}
           <Card className="mt-4 p-6">
-            <h3 className="mb-3 font-bold">🏅 {t.daily.leaderboardTitle}</h3>
+            <h3 className="mb-1 font-bold">🏅 {t.daily.leaderboardTitle}</h3>
+            <p className="mb-3 text-xs leading-relaxed text-fg-faint">
+              {t.daily.boardNote}
+            </p>
             {board.length === 0 ? (
               <p className="text-sm text-fg-muted">{t.daily.emptyBoard}</p>
             ) : (
@@ -337,7 +374,7 @@ export default function DailyPage() {
                       )}
                     >
                       <span className="w-6 text-center font-bold text-fg-faint">
-                        {i + 1}
+                        {t.num(i + 1)}
                       </span>
                       <span className="flex-1 truncate">
                         <span className="font-semibold">
@@ -352,10 +389,10 @@ export default function DailyPage() {
                         )}
                       </span>
                       <span dir="ltr" className="text-xs text-fg-faint">
-                        {row.correct}/10 · {fmt(row.time_ms)}
+                        {t.num(row.correct)}/{t.num(10)} · {t.num(fmt(row.time_ms))}
                       </span>
                       <span className="w-14 text-end font-bold text-brand-ink">
-                        {row.score}
+                        {t.num(row.score)}
                       </span>
                     </li>
                   );

@@ -1,5 +1,6 @@
 import type {
   AbstractItem,
+  AbstractRule,
   AbstractType,
   Cell,
   Fill,
@@ -147,6 +148,10 @@ function buildOptions(
 }
 
 // ------------------------------- SEQUENCE -------------------------------
+// The rotation step chosen by the last cycleFor("rotation") call, so the item
+// can report *which way* the shape turns.
+let lastRotStep = 90;
+
 function cycleFor(attr: Attr): (number | string)[] {
   if (attr === "fill") return shuffle([...FILLS]); // period 2 — repeat is visible
   if (attr === "rotation") {
@@ -155,6 +160,7 @@ function cycleFor(attr: Attr): (number | string)[] {
     // no inferable rule at all.
     const start = pick(ROTS);
     const step = pick([90, 270]); // clockwise or counter-clockwise
+    lastRotStep = step;
     return [0, 1, 2, 3].map(
       (i) => ((start + step * i) % 360) as Rotation,
     );
@@ -162,6 +168,20 @@ function cycleFor(attr: Attr): (number | string)[] {
   if (attr === "size") return shuffle([...SIZES]); // period 3 — repeat is visible
   if (attr === "count") return shuffle([1, 2, 3]); // period 3 (avoid 4-overflow)
   return shuffle([...KINDS]).slice(0, 3);
+}
+
+/** Describe one governed attribute as data the UI can translate. */
+function ruleFor(
+  attr: Attr,
+  cycle: (number | string)[],
+  axis?: "row" | "col" | "diag",
+  rotStep = 90,
+): AbstractRule {
+  if (attr === "rotation") {
+    return { attr, kind: "progression", step: rotStep, axis };
+  }
+  if (attr === "fill") return { attr, kind: "alternate", axis, values: cycle };
+  return { attr, kind: "cycle", axis, values: cycle };
 }
 
 function genSequence(d: number): AbstractItem {
@@ -177,7 +197,11 @@ function genSequence(d: number): AbstractItem {
   if (progAttrs.includes("rotation")) base.kind = pick(ROT_KINDS);
 
   const cycles: Partial<Record<Attr, (number | string)[]>> = {};
-  for (const a of progAttrs) cycles[a] = cycleFor(a);
+  const rotSteps: Partial<Record<Attr, number>> = {};
+  for (const a of progAttrs) {
+    cycles[a] = cycleFor(a);
+    if (a === "rotation") rotSteps[a] = lastRotStep;
+  }
 
   const descAt = (i: number): Desc => {
     const desc = { ...base };
@@ -203,7 +227,17 @@ function genSequence(d: number): AbstractItem {
   };
 
   const { options, answer } = buildOptions(answerCell, distractor, 4);
-  return { id: uid("seq"), type: "sequence", difficulty: d, prompt, options, answer };
+  return {
+    id: uid("seq"),
+    type: "sequence",
+    difficulty: d,
+    prompt,
+    options,
+    answer,
+    rules: progAttrs.map((a) =>
+      ruleFor(a, cycles[a]!, undefined, rotSteps[a] ?? 90),
+    ),
+  };
 }
 
 // ------------------------------- ODD-ONE-OUT -------------------------------
@@ -225,15 +259,28 @@ function genOddone(d: number): AbstractItem {
   const options = Array.from({ length: n }, (_, i) =>
     cellFromDesc(i === oddIndex ? oddDesc : base),
   );
-  return { id: uid("odd"), type: "oddone", difficulty: d, prompt: [], options, answer: oddIndex };
+  return {
+    id: uid("odd"),
+    type: "oddone",
+    difficulty: d,
+    prompt: [],
+    options,
+    answer: oddIndex,
+    rules: [{ attr: attrToDiffer, kind: "odd" }],
+  };
 }
 
 // ------------------------------- MATRIX -------------------------------
 function matrixCycle(attr: Attr): (number | string)[] {
   if (attr === "fill") return shuffle([...FILLS]); // len 2, index by r%2
   if (attr === "rotation") {
+    // FOUR steps, not three. With three, `cyc[idx % 3]` snapped back to the
+    // start at idx 3 — so on the diagonal axis (idx = r + c, up to 4) the shape
+    // stopped turning and jumped back, and the item no longer matched the
+    // "+90° per step" rule it claimed. A 4-cycle makes cyc[idx % 4] identical
+    // to (start + 90·idx) % 360 for every idx, so the progression is real.
     const start = pick(ROTS);
-    return [start, ((start + 90) % 360) as Rotation, ((start + 180) % 360) as Rotation];
+    return [0, 1, 2, 3].map((i) => ((start + 90 * i) % 360) as Rotation);
   }
   if (attr === "size") return shuffle([...SIZES]);
   if (attr === "count") return pickN([1, 2, 3, 4], 3);
@@ -288,7 +335,16 @@ function genMatrix(d: number): AbstractItem {
   };
 
   const { options, answer } = buildOptions(answerCell, distractor, 4);
-  return { id: uid("mat"), type: "matrix", difficulty: d, prompt, options, answer };
+  return {
+    id: uid("mat"),
+    type: "matrix",
+    difficulty: d,
+    prompt,
+    options,
+    answer,
+    // matrixCycle always advances rotation by +90 along its axis.
+    rules: gov.map((g) => ruleFor(g.a, g.cyc, g.axis, 90)),
+  };
 }
 
 // ------------------------------- dispatch -------------------------------

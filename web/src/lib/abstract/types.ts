@@ -21,6 +21,32 @@ export interface Cell {
 
 export type AbstractType = "sequence" | "matrix" | "oddone";
 
+export type RuleAttr = "count" | "kind" | "rotation" | "fill" | "size";
+
+/**
+ * The rule the generator actually used, emitted as DATA rather than a sentence
+ * so it stays translatable — and so items become machine-auditable.
+ *
+ * Feedback used to be a bare ✅/❌: the learner knew they were wrong but never
+ * why, which is training without learning.
+ */
+export interface AbstractRule {
+  attr: RuleAttr;
+  /**
+   * progression — the value advances by a fixed step (rotation)
+   * cycle       — the value walks a repeating list (count, kind, size)
+   * alternate   — two values swap back and forth (fill)
+   * odd         — three cells agree on this attribute and one doesn't
+   */
+  kind: "progression" | "cycle" | "alternate" | "odd";
+  /** Which direction the rule runs in a matrix. */
+  axis?: "row" | "col" | "diag";
+  /** Degrees per step, for a rotation progression. */
+  step?: number;
+  /** The repeating list, in order, for a cycle. */
+  values?: (number | string)[];
+}
+
 export interface AbstractItem {
   id: string;
   type: AbstractType;
@@ -31,4 +57,6 @@ export interface AbstractItem {
   prompt: Cell[];
   options: Cell[];
   answer: number; // index into options
+  /** Every rule governing this item, for the post-answer explanation. */
+  rules: AbstractRule[];
 }

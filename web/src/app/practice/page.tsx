@@ -169,7 +169,9 @@ export default function PracticePage() {
         </div>
         {phase === "running" && (
           <Badge tone="brand">
-            {pos + 1} / {queue.length}
+            <span dir="ltr">
+              {t.num(pos + 1)} / {t.num(queue.length)}
+            </span>
           </Badge>
         )}
       </header>

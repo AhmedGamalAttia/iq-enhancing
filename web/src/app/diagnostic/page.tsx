@@ -22,6 +22,7 @@ import {
 } from "@/lib/data";
 import { newCardRecord } from "@/lib/fsrs";
 import { useI18n } from "@/i18n/context";
+import { HonestyNote } from "@/components/honesty-note";
 import { QuestionCard } from "@/components/question-card";
 import { AbstractQuestionCard } from "@/components/abstract-question-card";
 import { Button, ButtonLink, Card } from "@/components/ui";
@@ -317,7 +318,7 @@ export default function DiagnosticPage() {
               </span>
             ))}
           </div>
-          <p className="mb-6 text-xs text-fg-faint">{t.diagnostic.notIQ}</p>
+          <HonestyNote variant="full" className="mx-auto mb-6 max-w-md" />
 
           {saved ? (
             <div className="mx-auto max-w-sm rounded-xl border border-brand/30 bg-brand-soft p-4">

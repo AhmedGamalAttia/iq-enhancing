@@ -37,7 +37,7 @@ export function reviewCard(
   correct: boolean,
   now: Date = new Date(),
 ): ReviewCardRecord {
-  const card = deserializeCard(record.fsrs);
+  const card = deserializeCard(record.fsrs, now);
   const rating = correct ? Rating.Good : Rating.Again;
   const { card: next } = scheduler.next(card, now, rating);
   return {
@@ -54,22 +54,63 @@ export function isDue(record: ReviewCardRecord, now: Date = new Date()): boolean
 }
 
 // ts-fsrs Card holds Date instances; localStorage/JSON needs ISO strings.
+//
+// Every field is written out BY NAME. `{ ...card }` looked equivalent, but it
+// silently kept only what the library happens to expose as own enumerable
+// properties — cards written that way landed in localStorage as `{ due }` alone,
+// and the next review threw `FSRSValidationError: Invalid state:[undefined]`,
+// which killed the practice session on the first answer.
 function serializeCard(card: Card): Record<string, unknown> {
   return {
-    ...card,
     due: card.due.toISOString(),
-    last_review: card.last_review ? card.last_review.toISOString() : undefined,
+    stability: card.stability,
+    difficulty: card.difficulty,
+    elapsed_days: card.elapsed_days,
+    scheduled_days: card.scheduled_days,
+    learning_steps: card.learning_steps,
+    reps: card.reps,
+    lapses: card.lapses,
+    state: card.state,
+    last_review: card.last_review
+      ? card.last_review.toISOString()
+      : undefined,
   };
 }
 
-function deserializeCard(data: Record<string, unknown>): Card {
-  const raw = data as unknown as Card & {
-    due: string;
-    last_review?: string;
-  };
+const REQUIRED: (keyof Card)[] = [
+  "stability",
+  "difficulty",
+  "elapsed_days",
+  "scheduled_days",
+  "reps",
+  "lapses",
+  "state",
+];
+
+/**
+ * Rebuild a Card from stored JSON. A record that is missing fields — written by
+ * the old serializer, or truncated — restarts scheduling from a fresh card
+ * instead of throwing: losing one card's interval is recoverable, losing the
+ * session is not.
+ */
+function deserializeCard(data: Record<string, unknown>, now: Date): Card {
+  const usable =
+    !!data &&
+    typeof data.due === "string" &&
+    REQUIRED.every((k) => typeof data[k as string] === "number");
+  if (!usable) return createEmptyCard(now);
+
+  const raw = data as unknown as Card & { due: string; last_review?: string };
   return {
-    ...raw,
     due: new Date(raw.due),
+    stability: raw.stability,
+    difficulty: raw.difficulty,
+    elapsed_days: raw.elapsed_days,
+    scheduled_days: raw.scheduled_days,
+    learning_steps: raw.learning_steps ?? 0,
+    reps: raw.reps,
+    lapses: raw.lapses,
+    state: raw.state,
     last_review: raw.last_review ? new Date(raw.last_review) : undefined,
   } as Card;
 }

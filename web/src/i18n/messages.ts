@@ -1,9 +1,13 @@
 import type { Locale } from "./config";
 import type { SkillKey } from "@/lib/types";
+import { ar as arNum, arCount, enCount } from "./num";
 
 // All user-facing strings. Both dictionaries implement the same interface, so
 // the type checker guarantees no key is missing in either language.
 export interface Messages {
+  /** Renders a number in the locale's own digits. Use for ANY number a
+      component interpolates itself, so one card never mixes numeral systems. */
+  num: (n: number | string) => string;
   nav: {
     brand: string;
     home: string;
@@ -26,6 +30,14 @@ export interface Messages {
     optionLetter: (letter: string, text: string) => string;
     chooseSkill: string;
     chooseDifficulty: string;
+  };
+  honesty: {
+    notIQ: string;
+    transferTitle: string;
+    transfer: string;
+    fluctuates: string;
+    rangeLabel: string;
+    whatWePromise: string;
   };
   errors: {
     title: string;
@@ -99,6 +111,12 @@ export interface Messages {
     trendHistoryTitle: string;
     lowConfidence: string;
     lowConfidenceHint: string;
+    wmTitle: string;
+    wmMeasured: (n: number, score: number) => string;
+    wmAt: (date: string) => string;
+    wmNotMeasured: string;
+    wmCta: string;
+    wmWhy: string;
   };
   practice: {
     title: string;
@@ -195,6 +213,20 @@ export interface Messages {
     bestLabel: (n: number) => string;
     cardHint: string;
   };
+  abstractRules: {
+    title: string;
+    attrs: Record<"count" | "kind" | "rotation" | "fill" | "size", string>;
+    rotate: (deg: number, clockwise: boolean) => string;
+    cycle: (attr: string, values: string) => string;
+    alternate: (attr: string, values: string) => string;
+    odd: (attr: string) => string;
+    inRows: string;
+    inCols: string;
+    inDiag: string;
+    /** Direction-of-progress marker; flips with the reading direction. */
+    arrow: string;
+    metaTip: string;
+  };
   abstractA11y: {
     kinds: Record<"circle" | "square" | "triangle" | "diamond" | "arrow", string>;
     fills: Record<"solid" | "outline", string>;
@@ -244,6 +276,7 @@ export interface Messages {
     rank: (rank: number, total: number) => string;
     percentile: (p: number) => string;
     leaderboardTitle: string;
+    boardNote: string;
     you: string;
     guestNote: string;
     emptyBoard: string;
@@ -252,6 +285,9 @@ export interface Messages {
     streakDays: (n: number) => string;
     keepStreak: string;
     badgesTitle: string;
+    rulesTitle: string;
+    rulesHint: string;
+    itemN: (n: number) => string;
     newBadge: string;
     badgeNames: Record<string, string>;
   };
@@ -266,6 +302,7 @@ export interface Messages {
 }
 
 const ar: Messages = {
+  num: (n) => arNum(n),
   nav: {
     brand: "منصّة القدرات المعرفية",
     home: "الرئيسية",
@@ -289,6 +326,17 @@ const ar: Messages = {
     chooseSkill: "اختر المحور",
     chooseDifficulty: "اختر مستوى الصعوبة",
   },
+  honesty: {
+    notIQ:
+      "ده تقييم تشخيصي لمهارات معرفية، مش اختبار ذكاء (IQ) معياري، والدرجة مش رقم ثابت لقدرتك.",
+    transferTitle: "بنوعد بإيه، وبإيه لأ",
+    transfer:
+      "التحسّن في تمرين معيّن مبينتقلش تلقائياً لذكاء عام أو لأداء أحسن في الشغل والدراسة — الأدلّة على انتقال الأثر لسه محدودة. اللي نقدر نوعدك بيه: إتقان أعلى في نوع المهمة اللي بتتمرّن عليها، وانتباه أوضح لطريقة تفكيرك، وعادة مراجعة منتظمة.",
+    fluctuates:
+      "النتيجة بتتذبذب من جلسة للتانية بسبب النوم والتركيز والحظ في اختيار الأسئلة. استنى أسبوعين على الأقل قبل ما تقارن.",
+    rangeLabel: "النطاق المرجّح",
+    whatWePromise: "اعرف أكتر عن حدود القياس",
+  },
   errors: {
     title: "حصل خطأ غير متوقّع",
     body: "معلش، حاجة وقعت عندنا. جرّب تاني، ولو الموضوع اتكرر ارجع للصفحة الرئيسية.",
@@ -298,17 +346,17 @@ const ar: Messages = {
     notFoundBody: "الرابط اللي فتحته اتغيّر أو مش صح.",
   },
   home: {
-    heroBadge: "قائم على الأدلّة العلمية — لا لعبة ولا تسلية",
+    heroBadge: "قائم على الأدلّة العلمية — تدريب، مش تسلية",
     heroTitle1: "طوّر قدراتك المعرفية",
     heroTitle2: "بطريقة علمية ممنهجة",
     heroSubtitle:
-      "منصّة تبدأ بتقييم دقيق لمهاراتك المعرفية، ثم ترسم لك مسار تطوير مخصّصاً يعتمد على أقوى تقنيات التعلّم المثبتة علمياً — لتتعلّم أسرع وتفكّر أوضح.",
+      "منصّة تبدأ بتقييم تشخيصي يعطيك تقديراً مبدئياً لمهاراتك المعرفية، ثم ترسم لك مسار تدريب مخصّصاً مبنياً على تقنيات تعلّم مدروسة جيداً — الاسترجاع النشط والتكرار المتباعد.",
     ctaStart: "ابدأ رحلتك المجانية",
     ctaPractice: "جرّب التدريب",
     howTitle: "كيف تعمل المنصّة",
-    stepLabel: (n) => `الخطوة ${n}`,
+    stepLabel: (n) => `الخطوة ${arNum(n)}`,
     steps: [
-      { title: "تقييم تشخيصي", body: "أسئلة تكيّفية تحدّد مستواك الحقيقي في كل محور معرفي بدقّة.", icon: "🧭" },
+      { title: "تقييم تشخيصي", body: "أسئلة تكيّفية تعطيك تقديراً مبدئياً لكل محور — نعرضه كنطاق، مش كرقم قاطع.", icon: "🧭" },
       { title: "مسار مخصّص", body: "نحلّل نقاط قوّتك وضعفك ونوجّه تدريبك نحو ما يحتاج تطويراً فعلاً.", icon: "🗺️" },
       { title: "تدريب بالتكرار المتباعد", body: "خوارزمية FSRS تعيد الأسئلة في التوقيت الأمثل لتثبيتها في ذاكرتك بعيدة المدى.", icon: "🔁" },
     ],
@@ -322,28 +370,28 @@ const ar: Messages = {
       { t: "ما وراء المعرفة", d: "تقارير تجعلك تفهم كيف تتعلّم وتفكّر، لا أن تحفظ فقط." },
     ],
     ctaTitle: "جاهز تبدأ رحلتك؟",
-    ctaSubtitle: "التقييم يستغرق دقائق، ويمنحك خريطة واضحة لقدراتك ومسار تطويرك.",
+    ctaSubtitle: "التقييم يستغرق دقائق، ويمنحك نقطة بداية واضحة تعرف منها تتدرّب على إيه.",
     ctaNow: "ابدأ الآن",
     footer: "منصّة تنمية القدرات المعرفية — نسخة أولية (MVP)",
   },
   diagnostic: {
     title: "التقييم التشخيصي",
     intro: (count) =>
-      `${count} سؤالاً تكيّفياً تقيس مستواك في خمسة محاور معرفية. تزداد صعوبة الأسئلة مع إجاباتك الصحيحة لنصل لتقدير دقيق لقدراتك. لن يستغرق الأمر أكثر من بضع دقائق.`,
+      `${arNum(count)} سؤالاً تكيّفياً في خمسة محاور معرفية. تزداد صعوبة الأسئلة مع إجاباتك الصحيحة لنقترب من مستواك بأقلّ عدد ممكن من الأسئلة. بضع دقائق، والنتيجة تقدير مبدئي يُعرَض كنطاق.`,
     notIQ: "ملاحظة: هذا تقييم تشخيصي للمهارات المعرفية، وليس اختبار ذكاء (IQ) معياري.",
     start: "ابدأ التقييم",
     saving: "جارٍ حساب نتائجك…",
     goResults: "اذهب للنتائج",
     resumeTitle: "عندك تقييم لسه مخلّصتوش",
     resumeBody: (done, total) =>
-      `وصلت للسؤال ${done} من ${total}. تحب تكمّل من مكانك ولا تبدأ من الأول؟`,
+      `وصلت للسؤال ${arNum(done)} من ${arNum(total)}. تحب تكمّل من مكانك ولا تبدأ من الأول؟`,
     resume: "كمّل من مكاني",
     restart: "ابدأ من الأول",
     localeLocked:
       "التقييم بيفضل بلغة بدايته عشان النتيجة تفضل قابلة للمقارنة.",
   },
   question: {
-    progress: (i, n, d) => `سؤال ${i} / ${n} · صعوبة ${d}/5`,
+    progress: (i, n, d) => `سؤال ${arNum(i)} / ${arNum(n)} · صعوبة ${arNum(d)}/٥`,
     correct: "✅ إجابة صحيحة",
     incorrect: "❌ إجابة غير صحيحة",
     next: "التالي ←",
@@ -361,9 +409,15 @@ const ar: Messages = {
     startAssessment: "ابدأ التقييم",
     title: "نتائج تقييمك المعرفي",
     lastAssessment: (date) => `آخر تقييم: ${date}`,
-    outOf100: "/100",
+    outOf100: `/${arNum(100)}`,
     correctOfTotal: (correct, total) =>
-      `أجبت بشكل صحيح على ${correct} من ${total} سؤالاً في هذا المحور.`,
+      `أجبت صح على ${arNum(correct)} من ${arCount(total, {
+        zero: "لا أسئلة",
+        one: "سؤال واحد",
+        two: "سؤالين",
+        few: "{n} أسئلة",
+        many: "{n} سؤالاً",
+      })} في هذا المحور.`,
     recommendationTitle: "توصية مسار التطوير",
     recommendationBody: (skill) =>
       `محور «${skill}» هو الأكثر حاجة للتطوير حالياً. ركّز تدريبك عليه أولاً — الممارسة المتعمّدة على نقاط الضعف هي أسرع طريق للتحسّن.`,
@@ -375,6 +429,13 @@ const ar: Messages = {
     trendChangeTitle: "التغيّر منذ أول تقييم",
     trendHistoryTitle: "سجل التقييمات",
     lowConfidence: "بيانات غير كافية",
+    wmTitle: "الذاكرة العاملة",
+    wmMeasured: (n, score) => `مستوى ${arNum(n)}-back · دقّة ${arNum(score)}٪`,
+    wmAt: (date) => `آخر قياس: ${date}`,
+    wmNotMeasured: "لسه ما اتقاستش",
+    wmCta: "قِسها بتمرين n-back",
+    wmWhy:
+      "الذاكرة العاملة ما ينفعش تتقاس بسؤال اختيار من متعدّد — النص بيفضل قدّامك وأنت بتجاوب، فتبقى قراءة مش حفظ. عشان كده بنقيسها بتمرين n-back المؤقّت وحده.",
     lowConfidenceHint:
       "عدد الأسئلة في هذا المحور قليل، فلا نعرض درجة قد تكون مضلّلة. زد تدريبك عليه أو أعد التقييم لاحقاً.",
   },
@@ -388,11 +449,11 @@ const ar: Messages = {
     newAssessment: "تقييم جديد",
     doneTitle: "انتهت الجلسة",
     doneBody: (correct, total) =>
-      `أجبت بشكل صحيح على ${correct} من ${total}. سيتم جدولة الأسئلة تلقائياً لمراجعتها في الوقت الأمثل لتثبيتها في ذاكرتك.`,
+      `أجبت صح على ${arNum(correct)} من ${arNum(total)}. سيتم جدولة الأسئلة تلقائياً لمراجعتها في الوقت الأمثل لتثبيتها في ذاكرتك.`,
     newSession: "جلسة جديدة",
     myResults: "نتائجي",
     aiPanelTitle: "🤖 ولّد تمارين إضافية بالذكاء الاصطناعي",
-    difficultyOpt: (d) => `صعوبة ${d}`,
+    difficultyOpt: (d) => `صعوبة ${arNum(d)}`,
     generate: "ولّد ٣ أسئلة",
     generating: "…جارٍ التوليد",
     aiNote: "الأسئلة المولّدة للتدريب الفوري ولا تُحفظ في بنك المراجعة.",
@@ -421,7 +482,14 @@ const ar: Messages = {
   journey: {
     title: "رحلتك المعرفية",
     subtitle: "دي خطواتك المنظّمة للتطوّر — اتبعها بالترتيب.",
-    streak: (n) => `🔥 ${n} يوم متتالي`,
+    streak: (n) =>
+      `🔥 ${arCount(n, {
+        zero: "لا أيام متتالية",
+        one: "يوم واحد متّصل",
+        two: "يومان متّصلان",
+        few: "{n} أيام متّصلة",
+        many: "{n} يوماً متّصلاً",
+      })}`,
     noStreak: "ابدأ سلسلتك اليومية النهاردة",
     nextStepBadge: "خطوتك التالية",
     assessTitle: "١) قيّم مستواك",
@@ -430,7 +498,14 @@ const ar: Messages = {
     assessDoneAt: (date) => `تمّ آخر تقييم: ${date}`,
     practiceTitle: "٢) درّب يومياً",
     practiceDesc: "اتدرّب على نقاط ضعفك بالتكرار المتباعد — أقصر طريق للتحسّن.",
-    dueToday: (n) => `عندك ${n} سؤال مستحقّ للمراجعة النهاردة`,
+    dueToday: (n) =>
+      `عندك ${arCount(n, {
+        zero: "لا أسئلة مستحقّة",
+        one: "سؤال واحد مستحقّ",
+        two: "سؤالان مستحقّان",
+        few: "{n} أسئلة مستحقّة",
+        many: "{n} سؤالاً مستحقّاً",
+      })} للمراجعة النهاردة`,
     noDueToday: "لا مراجعات مستحقّة الآن — تقدر تتدرّب أو تولّد تمارين جديدة.",
     practiceCta: "ابدأ جلسة النهاردة",
     cadence: "الإيقاع الموصى به: ١٠–١٥ دقيقة يومياً، ٤–٥ أيام أسبوعياً. الاستمرارية أهم من طول الجلسة.",
@@ -439,7 +514,14 @@ const ar: Messages = {
     progressCta: "شوف نتائجي",
     reassessTitle: "٤) أعد التقييم",
     reassessDesc: "كل أسبوعين، أعد التقييم عشان تقيس تحسّنك فعلياً.",
-    reassessIn: (days) => `متاح بعد ${days} يوم`,
+    reassessIn: (days) =>
+      `متاح بعد ${arCount(days, {
+        zero: "اليوم",
+        one: "يوم واحد",
+        two: "يومين",
+        few: "{n} أيام",
+        many: "{n} يوماً",
+      })}`,
     reassessReady: "حان وقت إعادة التقييم — قِس تقدّمك!",
     reassessCta: "أعد التقييم",
     done: "تمّ ✓",
@@ -469,12 +551,12 @@ const ar: Messages = {
         : `المربّع الأخير في نفس مكان اللي قبله بـ ${n} → اضغط «تطابق»!`,
     levelTag: (n) => (n === 1 ? "سهل" : n === 2 ? "متوسط" : "صعب"),
     chooseLevel: "اختر المستوى:",
-    level: (n) => `${n}-back`,
+    level: (n) => `${arNum(n)}-back`,
     start: "ابدأ",
     getReady: "استعد…",
     match: "تطابق",
     matchHint: "اضغط عند التطابق (أو مفتاح المسافة)",
-    progress: (i, total) => `${i} / ${total}`,
+    progress: (i, total) => `${arNum(i)} / ${arNum(total)}`,
     doneTitle: "انتهى التمرين",
     scoreLabel: "الدرجة",
     hitsLabel: "إصابات",
@@ -485,8 +567,29 @@ const ar: Messages = {
     interpLow: "بداية جيّدة. جرّب مستوى أسهل وركّز على تتبّع المواقع.",
     playAgain: "مرة أخرى",
     toPractice: "رجوع للتدريب",
-    bestLabel: (n) => `أفضل نتيجة (${n}-back)`,
+    bestLabel: (n) => `أفضل نتيجة (${arNum(n)}-back)`,
     cardHint: "تمرين تفاعلي بمؤقّت لتقوية الذاكرة العاملة",
+  },
+  abstractRules: {
+    title: "القاعدة",
+    attrs: {
+      count: "العدد",
+      kind: "نوع الشكل",
+      rotation: "اتجاه الشكل",
+      fill: "الملء",
+      size: "الحجم",
+    },
+    rotate: (deg, clockwise) =>
+      `الشكل يلفّ ${arNum(deg)}° ${clockwise ? "مع عقارب الساعة" : "عكس عقارب الساعة"} في كل خطوة.`,
+    cycle: (attr, values) => `${attr} يدور بالترتيب: ${values} ثم يعيد من أوّله.`,
+    alternate: (attr, values) => `${attr} يتبدّل بين ${values}.`,
+    odd: (attr) => `ثلاثة أشكال متطابقة وواحد يختلف عنهم في ${attr}.`,
+    arrow: "←",
+    inRows: "(القاعدة تمشي على الصفوف)",
+    inCols: "(القاعدة تمشي على الأعمدة)",
+    inDiag: "(القاعدة تمشي على القُطر)",
+    metaTip:
+      "نصيحة للمرّة الجاية: ابدأ بأوضح سمة تتغيّر (العدد أو الحجم)، سَمِّ القاعدة بصوت عالٍ، وبعدين اتأكّد إن باقي السمات ثابتة.",
   },
   abstractA11y: {
     kinds: {
@@ -499,31 +602,31 @@ const ar: Messages = {
     fills: { solid: "مصمت", outline: "مفرّغ" },
     sizes: { 1: "صغير", 2: "متوسط", 3: "كبير" },
     cell: (count, kind, fill, size, rot) =>
-      `عدد ${count} — ${kind}، ${fill}، ${size}، دوران ${rot} درجة`,
+      `عدد ${arNum(count)} — ${kind}، ${fill}، ${size}، دوران ${arNum(rot)} درجة`,
     emptyCell: "خانة فارغة — هي المطلوبة",
     promptTitle: "وصف نصّي للنمط",
-    promptStep: (i, desc) => `الخطوة ${i}: ${desc}`,
-    matrixCellAt: (row, col, desc) => `الصف ${row} العمود ${col}: ${desc}`,
+    promptStep: (i, desc) => `الخطوة ${arNum(i)}: ${desc}`,
+    matrixCellAt: (row, col, desc) => `الصف ${arNum(row)} العمود ${arNum(col)}: ${desc}`,
     optionsTitle: "الاختيارات",
   },
   abstract: {
     title: "الاستدلال المجرّد",
     cardHint: "أنماط بصرية عادلة للجميع — بلا لغة ولا ثقافة، وتتكيّف مع مستواك",
-    intro: "أنماط بصرية مولّدة تلقائياً — بلا لغة ولا معلومات مسبقة، فتناسب أي عمر أو خلفية. اكتشف القاعدة واختر الإجابة.",
+    intro: "أنماط بصرية مولّدة تلقائياً — بلا لغة ولا معلومات مسبقة، فهي أعدل من الأسئلة اللفظية لمن اختلفت لغتهم أو تعليمهم. (الألفة بالاختبارات نفسها ما زالت تؤثّر، فلا يوجد اختبار محايد تماماً.) اكتشف القاعدة واختر الإجابة.",
     patternsNote: "٣ أنماط: إكمال التسلسل، إكمال الشبكة، واكتشاف الشاذ.",
     instrSequence: "اختر ما يُكمل التسلسل:",
     instrMatrix: "اختر ما يُكمل الشبكة:",
     instrOddone: "اكتشف الشكل الشاذ:",
     start: "ابدأ",
-    levelNow: (s) => `مستواك الآن: ${s}`,
-    progress: (i, total) => `${i} / ${total}`,
+    levelNow: (s) => `مستواك الآن: ${arNum(s)}`,
+    progress: (i, total) => `${arNum(i)} / ${arNum(total)}`,
     correct: "✅ إجابة صحيحة",
     incorrect: "❌ إجابة غير صحيحة",
     next: "التالي ←",
     finish: "إنهاء",
     doneTitle: "انتهت الجلسة",
     estimatedLevel: "مستواك المُقدَّر",
-    accuracy: (c, t) => `أجبت صح على ${c} من ${t}`,
+    accuracy: (c, t) => `أجبت صح على ${arNum(c)} من ${arNum(t)}`,
     again: "مرة أخرى",
     toPractice: "رجوع للتدريب",
   },
@@ -536,22 +639,35 @@ const ar: Messages = {
     start: "ابدأ التحدّي",
     viewResult: "شوف نتيجتك",
     elapsed: "الوقت",
-    progress: (i, total) => `${i} / ${total}`,
+    progress: (i, total) => `${arNum(i)} / ${arNum(total)}`,
     doneTitle: "خلّصت تحدّي النهاردة! 🎉",
     correctLabel: "إجابات صحيحة",
     timeLabel: "الوقت الكلّي",
     scoreLabel: "النقاط",
-    rank: (rank, total) => `ترتيبك ${rank} من ${total}`,
-    percentile: (p) => `أفضل من ${p}% من لاعبي اليوم`,
+    rank: (rank, total) => `ترتيبك ${arNum(rank)} من ${arNum(total)}`,
+    percentile: (p) => `أفضل من ${arNum(p)}٪ من لاعبي اليوم`,
     leaderboardTitle: "متصدّرو اليوم",
+    boardNote:
+      "اللوحة والسلسلة والشارات موجودة عشان تساعدك تحافظ على عادة يومية — مش مقياس لقدرتك. اللي يهمّ فعلاً تقدّمك أنت مع نفسك، وإنك تفهم قاعدة كل أحجية.",
     you: "أنت",
     guestNote: "سجّل دخول عشان تدخل لوحة المتصدّرين.",
     emptyBoard: "كن أول المتصدّرين اليوم!",
     comeBack: "ارجع بكرة لتحدّي جديد.",
     toJourney: "رجوع لرحلتي",
-    streakDays: (n) => `🔥 ${n} يوم متتالي`,
+    streakDays: (n) =>
+      `🔥 ${arCount(n, {
+        zero: "لا أيام متتالية",
+        one: "يوم واحد متّصل",
+        two: "يومان متّصلان",
+        few: "{n} أيام متّصلة",
+        many: "{n} يوماً متّصلاً",
+      })}`,
     keepStreak: "لا تكسر السلسلة — ارجع كل يوم!",
     badgesTitle: "شاراتك",
+    rulesTitle: "قواعد أحاجي اليوم",
+    rulesHint:
+      "راجعها دلوقتي وأنت فاكر الأشكال — ده اللي بيحوّل التحدّي من قياس إلى تعلّم.",
+    itemN: (n) => `السؤال ${arNum(n)}`,
     newBadge: "جديدة!",
     badgeNames: {
       first: "أول تحدّي",
@@ -589,8 +705,8 @@ const ar: Messages = {
     },
     working_memory: {
       name: "الذاكرة العاملة",
-      tagline: "الاحتفاظ بالمعلومات ومعالجتها ذهنياً",
-      desc: "القدرة على الاحتفاظ بالمعلومات في الذهن ومعالجتها آنياً — كترتيب سلاسل أو عكسها أو تتبّع مواضع العناصر.",
+      tagline: "تُقاس بتمرين n-back المؤقّت",
+      desc: "القدرة على الاحتفاظ بالمعلومات في الذهن ومعالجتها آنياً. تُقاس عندنا بتمرين n-back التفاعلي وحده — لأن سؤال اختيار من متعدّد يترك النص أمامك وأنت تجاوب، فيقيس القراءة لا الحفظ.",
     },
     numeracy: {
       name: "التفكير الكمّي",
@@ -606,6 +722,7 @@ const ar: Messages = {
 };
 
 const en: Messages = {
+  num: (n) => String(n),
   nav: {
     brand: "Cognitive Skills Platform",
     home: "Home",
@@ -629,6 +746,17 @@ const en: Messages = {
     chooseSkill: "Choose a dimension",
     chooseDifficulty: "Choose a difficulty level",
   },
+  honesty: {
+    notIQ:
+      "This is a diagnostic of cognitive skills, not a standardized IQ test — and the score is not a fixed number for your ability.",
+    transferTitle: "What we promise, and what we don't",
+    transfer:
+      "Getting better at a specific exercise does not automatically transfer to general intelligence or to better performance at work or school — the evidence for far transfer is still thin. What we can promise: more skill at the kind of task you practise, a clearer view of how you think, and a steady review habit.",
+    fluctuates:
+      "Scores move between sessions with sleep, focus and which items you happened to get. Wait at least two weeks before comparing.",
+    rangeLabel: "Likely range",
+    whatWePromise: "More on the limits of this measure",
+  },
   errors: {
     title: "Something went wrong",
     body: "Sorry — that broke on our side. Try again, and if it keeps happening head back to the home page.",
@@ -638,17 +766,17 @@ const en: Messages = {
     notFoundBody: "The link you opened has moved or isn't valid.",
   },
   home: {
-    heroBadge: "Evidence-based — not a game, not entertainment",
+    heroBadge: "Evidence-based — training, not entertainment",
     heroTitle1: "Develop your cognitive abilities",
     heroTitle2: "the scientific, methodical way",
     heroSubtitle:
-      "A platform that starts with a precise assessment of your cognitive skills, then builds you a personalized development path grounded in the most proven learning science — so you learn faster and think clearer.",
+      "A platform that starts with a diagnostic estimate of your cognitive skills, then builds you a personalized training path grounded in well-studied learning techniques — active recall and spaced repetition.",
     ctaStart: "Start your free journey",
     ctaPractice: "Try practice",
     howTitle: "How it works",
     stepLabel: (n) => `Step ${n}`,
     steps: [
-      { title: "Diagnostic assessment", body: "Adaptive questions that pinpoint your true level in each cognitive dimension.", icon: "🧭" },
+      { title: "Diagnostic assessment", body: "Adaptive questions give a first estimate per dimension — shown as a range, not a verdict.", icon: "🧭" },
       { title: "Personalized path", body: "We analyze your strengths and weaknesses and steer your training toward what truly needs work.", icon: "🗺️" },
       { title: "Spaced-repetition training", body: "The FSRS algorithm reschedules questions at the optimal time to cement them in long-term memory.", icon: "🔁" },
     ],
@@ -662,7 +790,7 @@ const en: Messages = {
       { t: "Metacognition", d: "Reports that help you understand how you learn and think, not just memorize." },
     ],
     ctaTitle: "Ready to start your journey?",
-    ctaSubtitle: "The assessment takes minutes and gives you a clear map of your abilities and path.",
+    ctaSubtitle: "The assessment takes minutes and gives you a starting map of your skills and where to train.",
     ctaNow: "Start now",
     footer: "Cognitive Skills Platform — early version (MVP)",
   },
@@ -715,6 +843,13 @@ const en: Messages = {
     trendChangeTitle: "Change since first assessment",
     trendHistoryTitle: "Assessment history",
     lowConfidence: "Not enough data",
+    wmTitle: "Working memory",
+    wmMeasured: (n, score) => `${n}-back · ${score}% accuracy`,
+    wmAt: (date) => `Last measured: ${date}`,
+    wmNotMeasured: "Not measured yet",
+    wmCta: "Measure it with the n-back task",
+    wmWhy:
+      "Working memory can't be measured by a multiple-choice item — the text stays on screen while you answer, so it tests reading, not holding. We measure it with the timed n-back task instead.",
     lowConfidenceHint:
       "Too few questions in this dimension to report a score that wouldn't mislead. Practise it or re-assess later.",
   },
@@ -770,7 +905,8 @@ const en: Messages = {
     assessDoneAt: (date) => `Last assessed: ${date}`,
     practiceTitle: "2) Practice daily",
     practiceDesc: "Train your weak spots with spaced repetition — the fastest path to improvement.",
-    dueToday: (n) => `You have ${n} question(s) due for review today`,
+    dueToday: (n) =>
+      `You have ${enCount(n, "{n} question", "{n} questions")} due for review today`,
     noDueToday: "Nothing due right now — you can practice or generate new exercises.",
     practiceCta: "Start today's session",
     cadence: "Recommended rhythm: 10–15 minutes a day, 4–5 days a week. Consistency matters more than session length.",
@@ -779,7 +915,8 @@ const en: Messages = {
     progressCta: "See my results",
     reassessTitle: "4) Re-assess",
     reassessDesc: "Every two weeks, retake the assessment to measure real improvement.",
-    reassessIn: (days) => `Available in ${days} day(s)`,
+    reassessIn: (days) =>
+      `Available in ${enCount(days, "{n} day", "{n} days")}`,
     reassessReady: "Time to re-assess — measure your progress!",
     reassessCta: "Retake assessment",
     done: "Done ✓",
@@ -828,6 +965,27 @@ const en: Messages = {
     bestLabel: (n) => `Best (${n}-back)`,
     cardHint: "A timed interactive task to strengthen working memory",
   },
+  abstractRules: {
+    title: "The rule",
+    attrs: {
+      count: "the count",
+      kind: "the shape",
+      rotation: "the direction",
+      fill: "the fill",
+      size: "the size",
+    },
+    rotate: (deg, clockwise) =>
+      `The shape turns ${deg}° ${clockwise ? "clockwise" : "counter-clockwise"} at each step.`,
+    cycle: (attr, values) => `${attr} cycles through ${values}, then repeats.`,
+    alternate: (attr, values) => `${attr} alternates between ${values}.`,
+    odd: (attr) => `Three shapes match and one differs in ${attr}.`,
+    arrow: "→",
+    inRows: "(the rule runs along the rows)",
+    inCols: "(the rule runs along the columns)",
+    inDiag: "(the rule runs along the diagonal)",
+    metaTip:
+      "For next time: start with the most obvious changing feature (count or size), say the rule out loud, then check the other features are holding still.",
+  },
   abstractA11y: {
     kinds: {
       circle: "circle",
@@ -849,7 +1007,7 @@ const en: Messages = {
   abstract: {
     title: "Abstract Reasoning",
     cardHint: "Fair visual patterns for everyone — no language or culture, adapts to your level",
-    intro: "Procedurally generated visual patterns — no language or prior knowledge, so they suit any age or background. Spot the rule and pick the answer.",
+    intro: "Procedurally generated visual patterns — no language or prior knowledge, so they are fairer than verbal items across languages and schooling. (Familiarity with tests still helps, so no measure is truly neutral.) Spot the rule and pick the answer.",
     patternsNote: "3 patterns: complete the sequence, complete the grid, and find the odd one out.",
     instrSequence: "Pick what completes the sequence:",
     instrMatrix: "Pick what completes the grid:",
@@ -884,6 +1042,8 @@ const en: Messages = {
     rank: (rank, total) => `Rank ${rank} of ${total}`,
     percentile: (p) => `Better than ${p}% of today's players`,
     leaderboardTitle: "Today's leaders",
+    boardNote:
+      "The board, the streak and the badges exist to help you keep a daily habit — they are not a measure of your ability. What matters is your own progress and understanding the rule behind each puzzle.",
     you: "You",
     guestNote: "Sign in to join the leaderboard.",
     emptyBoard: "Be the first on today's board!",
@@ -892,6 +1052,10 @@ const en: Messages = {
     streakDays: (n) => `🔥 ${n}-day streak`,
     keepStreak: "Don't break the streak — come back every day!",
     badgesTitle: "Your badges",
+    rulesTitle: "Today's rules",
+    rulesHint:
+      "Read them while the shapes are still fresh — this is what turns the challenge from a measurement into practice.",
+    itemN: (n) => `Item ${n}`,
     newBadge: "New!",
     badgeNames: {
       first: "First challenge",
@@ -929,8 +1093,8 @@ const en: Messages = {
     },
     working_memory: {
       name: "Working Memory",
-      tagline: "Holding and manipulating information mentally",
-      desc: "The ability to hold information in mind and manipulate it on the fly — ordering or reversing sequences, tracking positions.",
+      tagline: "Measured by the timed n-back task",
+      desc: "Holding information in mind and manipulating it on the fly. We measure it with the interactive n-back task only — a multiple-choice item leaves the text on screen while you answer, so it measures reading, not holding.",
     },
     numeracy: {
       name: "Numeracy",

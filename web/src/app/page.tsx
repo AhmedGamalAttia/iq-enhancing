@@ -2,6 +2,7 @@
 
 import { SKILL_LIST } from "@/data/skills";
 import { useI18n } from "@/i18n/context";
+import { HonestyNote } from "@/components/honesty-note";
 import { Badge, ButtonLink, Card } from "@/components/ui";
 
 export default function Home() {
@@ -100,6 +101,9 @@ export default function Home() {
               </div>
             ))}
           </div>
+
+          {/* The limits of the claim, next to the claim itself. */}
+          <HonestyNote variant="full" className="mt-6" />
         </Card>
       </section>
 
