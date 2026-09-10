@@ -1,0 +1,312 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { logPracticeToday } from "@/lib/data";
+import { useI18n } from "@/i18n/context";
+import { Button, ButtonLink, Card, cn } from "@/components/ui";
+
+const TRIALS = 20;
+const STIM_MS = 700; // stimulus visible
+const TRIAL_MS = 2500; // full trial length (stimulus + gap)
+const TARGET_RATE = 0.32;
+
+type Phase = "intro" | "countdown" | "running" | "done";
+interface Stats {
+  hits: number;
+  misses: number;
+  fa: number;
+  cr: number;
+}
+
+function genSequence(n: number, trials: number): number[] {
+  const seq: number[] = [];
+  for (let i = 0; i < trials; i++) {
+    if (i >= n && Math.random() < TARGET_RATE) {
+      seq.push(seq[i - n]); // target: repeat the n-back position
+    } else {
+      let c: number;
+      do {
+        c = Math.floor(Math.random() * 9);
+      } while (i >= n && c === seq[i - n]); // avoid accidental matches
+      seq.push(c);
+    }
+  }
+  return seq;
+}
+
+export default function NBackPage() {
+  const { t } = useI18n();
+  const [phase, setPhase] = useState<Phase>("intro");
+  const [nLevel, setNLevel] = useState(2);
+  const [activeCell, setActiveCell] = useState<number | null>(null);
+  const [index, setIndex] = useState(0);
+  const [countdown, setCountdown] = useState(3);
+  const [pressed, setPressed] = useState(false);
+  const [result, setResult] = useState<(Stats & { score: number }) | null>(null);
+  const [best, setBest] = useState<number | null>(null);
+
+  const seqRef = useRef<number[]>([]);
+  const idxRef = useRef(0);
+  const respondedRef = useRef(false);
+  const statsRef = useRef<Stats>({ hits: 0, misses: 0, fa: 0, cr: 0 });
+  const nRef = useRef(2);
+  const phaseRef = useRef<Phase>("intro");
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  function clearTimers() {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  }
+
+  // Load best score for the selected level on the intro screen.
+  useEffect(() => {
+    if (phase !== "intro") return;
+    try {
+      const v = localStorage.getItem(`cog:nback:best:${nLevel}`);
+      setBest(v ? Number(v) : null);
+    } catch {
+      setBest(null);
+    }
+  }, [phase, nLevel]);
+
+  const respond = useCallback(() => {
+    if (phaseRef.current !== "running" || respondedRef.current) return;
+    respondedRef.current = true;
+    setPressed(true);
+    timers.current.push(setTimeout(() => setPressed(false), 150));
+  }, []);
+
+  // Spacebar to respond.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        respond();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [respond]);
+
+  useEffect(() => () => clearTimers(), []);
+
+  function evaluateTrial(i: number) {
+    const n = nRef.current;
+    const isTarget = i >= n && seqRef.current[i] === seqRef.current[i - n];
+    const responded = respondedRef.current;
+    const s = statsRef.current;
+    if (isTarget && responded) s.hits += 1;
+    else if (isTarget && !responded) s.misses += 1;
+    else if (!isTarget && responded) s.fa += 1;
+    else s.cr += 1;
+  }
+
+  const runTrial = useCallback(() => {
+    const i = idxRef.current;
+    if (i >= seqRef.current.length) {
+      finish();
+      return;
+    }
+    respondedRef.current = false;
+    setIndex(i);
+    setActiveCell(seqRef.current[i]);
+    timers.current.push(setTimeout(() => setActiveCell(null), STIM_MS));
+    timers.current.push(
+      setTimeout(() => {
+        evaluateTrial(i);
+        idxRef.current = i + 1;
+        runTrial();
+      }, TRIAL_MS),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function finish() {
+    clearTimers();
+    const s = statsRef.current;
+    const targets = s.hits + s.misses;
+    const nonTargets = s.fa + s.cr;
+    const hitRate = targets ? s.hits / targets : 0;
+    const faRate = nonTargets ? s.fa / nonTargets : 0;
+    const score = Math.max(0, Math.min(100, Math.round((hitRate - faRate) * 100)));
+    setResult({ ...s, score });
+    setActiveCell(null);
+    setPhase("done");
+    phaseRef.current = "done";
+    logPracticeToday();
+    try {
+      const key = `cog:nback:best:${nRef.current}`;
+      const prev = Number(localStorage.getItem(key) ?? 0);
+      const nextBest = Math.max(prev, score);
+      localStorage.setItem(key, String(nextBest));
+      setBest(nextBest);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function start() {
+    clearTimers();
+    nRef.current = nLevel;
+    seqRef.current = genSequence(nLevel, TRIALS);
+    idxRef.current = 0;
+    statsRef.current = { hits: 0, misses: 0, fa: 0, cr: 0 };
+    setResult(null);
+    setIndex(0);
+    setPhase("countdown");
+    phaseRef.current = "countdown";
+    let c = 3;
+    setCountdown(3);
+    const tick = () => {
+      c -= 1;
+      if (c > 0) {
+        setCountdown(c);
+        timers.current.push(setTimeout(tick, 700));
+      } else {
+        setPhase("running");
+        phaseRef.current = "running";
+        runTrial();
+      }
+    };
+    timers.current.push(setTimeout(tick, 700));
+  }
+
+  const interp = (score: number) =>
+    score >= 70 ? t.nback.interpHigh : score >= 40 ? t.nback.interpMid : t.nback.interpLow;
+
+  return (
+    <div className="mx-auto max-w-md px-4 py-10 md:px-6">
+      {phase === "intro" && (
+        <Card className="animate-rise p-8 text-center">
+          <div className="mb-4 text-5xl">🧠</div>
+          <h1 className="mb-2 text-2xl font-bold">{t.nback.title}</h1>
+          <p className="mb-2 leading-relaxed text-fg-muted">{t.nback.intro}</p>
+          <p className="mb-6 leading-relaxed text-fg">
+            {t.nback.instruction(nLevel)}
+          </p>
+
+          <p className="mb-2 text-sm font-semibold">{t.nback.chooseLevel}</p>
+          <div className="mb-4 flex justify-center gap-2">
+            {[2, 3].map((n) => (
+              <button
+                key={n}
+                dir="ltr"
+                onClick={() => setNLevel(n)}
+                className={cn(
+                  "rounded-xl border px-5 py-2 text-sm font-bold transition-colors",
+                  nLevel === n
+                    ? "border-brand bg-brand-soft text-brand"
+                    : "border-border text-fg-muted hover:border-brand/50",
+                )}
+              >
+                {t.nback.level(n)}
+              </button>
+            ))}
+          </div>
+          {best != null && (
+            <p className="mb-6 text-xs text-fg-faint">
+              {t.nback.bestLabel(nLevel)}: <b className="text-brand">{best}</b>
+            </p>
+          )}
+          <Button size="lg" onClick={start}>
+            {t.nback.start}
+          </Button>
+        </Card>
+      )}
+
+      {phase === "countdown" && (
+        <Card className="grid place-items-center p-16">
+          <div className="text-6xl font-extrabold text-brand">{countdown}</div>
+          <p className="mt-3 text-fg-muted">{t.nback.getReady}</p>
+        </Card>
+      )}
+
+      {phase === "running" && (
+        <div>
+          <div className="mb-4 flex items-center justify-between text-sm text-fg-faint">
+            <span dir="ltr" className="font-bold text-brand">
+              {t.nback.level(nLevel)}
+            </span>
+            <span dir="ltr">{t.nback.progress(index + 1, TRIALS)}</span>
+          </div>
+
+          <div className="mx-auto mb-6 grid aspect-square max-w-[300px] grid-cols-3 gap-3">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "rounded-xl border transition-all duration-150",
+                  activeCell === i
+                    ? "border-brand bg-brand shadow-[0_0_30px_-4px_var(--brand)]"
+                    : "border-border-soft bg-surface-2",
+                )}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={respond}
+            className={cn(
+              "w-full rounded-2xl border-2 py-5 text-lg font-bold transition-all",
+              pressed
+                ? "border-brand bg-brand text-white"
+                : "border-brand/40 bg-brand-soft text-brand hover:bg-brand/15",
+            )}
+          >
+            {t.nback.match}
+          </button>
+          <p className="mt-3 text-center text-xs text-fg-faint">
+            {t.nback.matchHint}
+          </p>
+        </div>
+      )}
+
+      {phase === "done" && result && (
+        <Card className="animate-rise p-8 text-center">
+          <div className="mb-2 text-4xl">🧠</div>
+          <h2 className="mb-4 text-xl font-bold">{t.nback.doneTitle}</h2>
+
+          <div className="mb-4">
+            <div dir="ltr" className="text-5xl font-extrabold text-brand">
+              {result.score}
+              <span className="text-lg text-fg-faint">/100</span>
+            </div>
+            <p className="text-xs text-fg-faint">{t.nback.scoreLabel}</p>
+          </div>
+
+          <div className="mb-5 grid grid-cols-3 gap-2 text-sm">
+            <Stat label={t.nback.hitsLabel} value={result.hits} tone="text-success" />
+            <Stat label={t.nback.missesLabel} value={result.misses} tone="text-warning" />
+            <Stat label={t.nback.falseAlarmsLabel} value={result.fa} tone="text-danger" />
+          </div>
+
+          <p className="mb-6 leading-relaxed text-fg-muted">{interp(result.score)}</p>
+
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button onClick={start}>{t.nback.playAgain}</Button>
+            <ButtonLink href="/practice" variant="outline">
+              {t.nback.toPractice}
+            </ButtonLink>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border-soft bg-surface-2/50 p-3">
+      <div className={cn("text-2xl font-bold", tone)}>{value}</div>
+      <div className="text-xs text-fg-faint">{label}</div>
+    </div>
+  );
+}

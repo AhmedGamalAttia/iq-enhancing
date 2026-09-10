@@ -141,6 +141,30 @@ export interface Messages {
     start: string;
     steps: { title: string; body: string; icon: string }[];
   };
+  nback: {
+    title: string;
+    intro: string;
+    instruction: (n: number) => string;
+    chooseLevel: string;
+    level: (n: number) => string;
+    start: string;
+    getReady: string;
+    match: string;
+    matchHint: string;
+    progress: (i: number, total: number) => string;
+    doneTitle: string;
+    scoreLabel: string;
+    hitsLabel: string;
+    missesLabel: string;
+    falseAlarmsLabel: string;
+    interpHigh: string;
+    interpMid: string;
+    interpLow: string;
+    playAgain: string;
+    toPractice: string;
+    bestLabel: (n: number) => string;
+    cardHint: string;
+  };
   bands: {
     advanced: string;
     veryGood: string;
@@ -309,6 +333,31 @@ const ar: Messages = {
       { title: "بتشتغل إزاي", body: "١) قيّم مستواك. ٢) درّب يومياً على نقاط ضعفك بالتكرار المتباعد. ٣) تابع تقدّمك. ٤) أعد التقييم كل أسبوعين.", icon: "🔄" },
       { title: "المطلوب منك", body: "١٠–١٥ دقيقة يومياً، ٤–٥ أيام أسبوعياً. الاستمرارية أهم من المدّة — والتطبيق هيقولك كل يوم تعمل إيه.", icon: "⏱️" },
     ],
+  },
+  nback: {
+    title: "تمرين الذاكرة العاملة (n-back)",
+    intro: "هيضيء مربّع في الشبكة، واحد ورا التاني. مهمتك تفتكر مواقعهم.",
+    instruction: (n) =>
+      `اضغط «تطابق» لما موقع المربّع الحالي يكون نفس موقع اللي ظهر قبله بـ ${n} خطوات.`,
+    chooseLevel: "اختر المستوى:",
+    level: (n) => `${n}-back`,
+    start: "ابدأ",
+    getReady: "استعد…",
+    match: "تطابق",
+    matchHint: "اضغط عند التطابق (أو مفتاح المسافة)",
+    progress: (i, total) => `${i} / ${total}`,
+    doneTitle: "انتهى التمرين",
+    scoreLabel: "الدرجة",
+    hitsLabel: "إصابات",
+    missesLabel: "إغفالات",
+    falseAlarmsLabel: "إنذارات خاطئة",
+    interpHigh: "ممتاز! ذاكرتك العاملة قوية في هذا المستوى — جرّب مستوى أصعب.",
+    interpMid: "جيّد — استمر بالتدريب المنتظم لتتحسّن.",
+    interpLow: "بداية جيّدة. جرّب مستوى أسهل وركّز على تتبّع المواقع.",
+    playAgain: "مرة أخرى",
+    toPractice: "رجوع للتدريب",
+    bestLabel: (n) => `أفضل نتيجة (${n}-back)`,
+    cardHint: "تمرين تفاعلي بمؤقّت لتقوية الذاكرة العاملة",
   },
   bands: {
     advanced: "متقدّم",
@@ -504,6 +553,31 @@ const en: Messages = {
       { title: "How it works", body: "1) Assess your level. 2) Practice your weak spots daily with spaced repetition. 3) Track your progress. 4) Re-assess every two weeks.", icon: "🔄" },
       { title: "What's expected", body: "10–15 minutes a day, 4–5 days a week. Consistency beats duration — and the app tells you what to do each day.", icon: "⏱️" },
     ],
+  },
+  nback: {
+    title: "Working-memory task (n-back)",
+    intro: "A square will light up in the grid, one at a time. Your job is to remember their positions.",
+    instruction: (n) =>
+      `Press “Match” when the current square is in the same position as the one shown ${n} steps back.`,
+    chooseLevel: "Choose a level:",
+    level: (n) => `${n}-back`,
+    start: "Start",
+    getReady: "Get ready…",
+    match: "Match",
+    matchHint: "Press when it matches (or the Space key)",
+    progress: (i, total) => `${i} / ${total}`,
+    doneTitle: "Task complete",
+    scoreLabel: "Score",
+    hitsLabel: "Hits",
+    missesLabel: "Misses",
+    falseAlarmsLabel: "False alarms",
+    interpHigh: "Excellent! Strong working memory at this level — try a harder one.",
+    interpMid: "Good — keep practicing regularly to improve.",
+    interpLow: "Good start. Try an easier level and focus on tracking positions.",
+    playAgain: "Play again",
+    toPractice: "Back to practice",
+    bestLabel: (n) => `Best (${n}-back)`,
+    cardHint: "A timed interactive task to strengthen working memory",
   },
   bands: {
     advanced: "Advanced",

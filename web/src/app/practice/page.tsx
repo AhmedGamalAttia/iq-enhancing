@@ -153,6 +153,16 @@ export default function PracticePage() {
         )}
       </header>
 
+      <Card className="mb-6 flex items-center justify-between gap-3 p-4">
+        <div>
+          <p className="font-bold">🧠 {t.nback.title}</p>
+          <p className="text-xs text-fg-faint">{t.nback.cardHint}</p>
+        </div>
+        <ButtonLink href="/nback" variant="outline" size="sm">
+          {t.nback.start}
+        </ButtonLink>
+      </Card>
+
       {phase === "loading" && (
         <p className="py-10 text-center text-fg-muted">{t.practice.loading}</p>
       )}
