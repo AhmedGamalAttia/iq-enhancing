@@ -7,6 +7,7 @@ export interface Messages {
   nav: {
     brand: string;
     home: string;
+    journey: string;
     diagnostic: string;
     results: string;
     practice: string;
@@ -102,6 +103,39 @@ export interface Messages {
     notConfiguredBody: string;
     backHome: string;
   };
+  journey: {
+    title: string;
+    subtitle: string;
+    streak: (n: number) => string;
+    noStreak: string;
+    nextStepBadge: string;
+    assessTitle: string;
+    assessDesc: string;
+    assessCta: string;
+    assessDoneAt: (date: string) => string;
+    practiceTitle: string;
+    practiceDesc: string;
+    dueToday: (n: number) => string;
+    noDueToday: string;
+    practiceCta: string;
+    cadence: string;
+    progressTitle: string;
+    progressDesc: string;
+    progressCta: string;
+    reassessTitle: string;
+    reassessDesc: string;
+    reassessIn: (days: number) => string;
+    reassessReady: string;
+    reassessCta: string;
+    done: string;
+  };
+  onboarding: {
+    skip: string;
+    next: string;
+    back: string;
+    start: string;
+    steps: { title: string; body: string; icon: string }[];
+  };
   bands: {
     advanced: string;
     veryGood: string;
@@ -116,6 +150,7 @@ const ar: Messages = {
   nav: {
     brand: "منصّة القدرات المعرفية",
     home: "الرئيسية",
+    journey: "رحلتي",
     diagnostic: "التقييم",
     results: "النتائج",
     practice: "التدريب",
@@ -130,7 +165,7 @@ const ar: Messages = {
     heroTitle2: "بطريقة علمية ممنهجة",
     heroSubtitle:
       "منصّة تبدأ بتقييم دقيق لمهاراتك المعرفية، ثم ترسم لك مسار تطوير مخصّصاً يعتمد على أقوى تقنيات التعلّم المثبتة علمياً — لتتعلّم أسرع وتفكّر أوضح.",
-    ctaStart: "ابدأ التقييم المجاني",
+    ctaStart: "ابدأ رحلتك المجانية",
     ctaPractice: "جرّب التدريب",
     howTitle: "كيف تعمل المنصّة",
     stepLabel: (n) => `الخطوة ${n}`,
@@ -228,6 +263,43 @@ const ar: Messages = {
       "المنصّة تعمل حالياً في وضع الضيف (يُحفظ تقدّمك على هذا المتصفح). لتفعيل الحسابات والمزامنة، أضِف مفاتيح Supabase في ملف .env.local.",
     backHome: "العودة للرئيسية",
   },
+  journey: {
+    title: "رحلتك المعرفية",
+    subtitle: "دي خطواتك المنظّمة للتطوّر — اتبعها بالترتيب.",
+    streak: (n) => `🔥 ${n} يوم متتالي`,
+    noStreak: "ابدأ سلسلتك اليومية النهاردة",
+    nextStepBadge: "خطوتك التالية",
+    assessTitle: "١) قيّم مستواك",
+    assessDesc: "ابدأ بتقييم تشخيصي يحدّد نقاط قوّتك وضعفك في الخمس محاور.",
+    assessCta: "ابدأ التقييم",
+    assessDoneAt: (date) => `تمّ آخر تقييم: ${date}`,
+    practiceTitle: "٢) درّب يومياً",
+    practiceDesc: "اتدرّب على نقاط ضعفك بالتكرار المتباعد — أقصر طريق للتحسّن.",
+    dueToday: (n) => `عندك ${n} سؤال مستحقّ للمراجعة النهاردة`,
+    noDueToday: "لا مراجعات مستحقّة الآن — تقدر تتدرّب أو تولّد تمارين جديدة.",
+    practiceCta: "ابدأ جلسة النهاردة",
+    cadence: "الإيقاع الموصى به: ١٠–١٥ دقيقة يومياً، ٤–٥ أيام أسبوعياً. الاستمرارية أهم من طول الجلسة.",
+    progressTitle: "٣) تابع تقدّمك",
+    progressDesc: "شوف مستواك في كل محور وتطوّرك عبر الوقت.",
+    progressCta: "شوف نتائجي",
+    reassessTitle: "٤) أعد التقييم",
+    reassessDesc: "كل أسبوعين، أعد التقييم عشان تقيس تحسّنك فعلياً.",
+    reassessIn: (days) => `متاح بعد ${days} يوم`,
+    reassessReady: "حان وقت إعادة التقييم — قِس تقدّمك!",
+    reassessCta: "أعد التقييم",
+    done: "تمّ ✓",
+  },
+  onboarding: {
+    skip: "تخطّي",
+    next: "التالي",
+    back: "رجوع",
+    start: "يلا نبدأ",
+    steps: [
+      { title: "أهلاً بيك 👋", body: "دي منصّة علمية لتطوير قدراتك المعرفية — مش لعبة ولا تسلية. هدفنا تتعلّم أسرع وتفكّر أوضح.", icon: "🎯" },
+      { title: "بتشتغل إزاي", body: "١) قيّم مستواك. ٢) درّب يومياً على نقاط ضعفك بالتكرار المتباعد. ٣) تابع تقدّمك. ٤) أعد التقييم كل أسبوعين.", icon: "🔄" },
+      { title: "المطلوب منك", body: "١٠–١٥ دقيقة يومياً، ٤–٥ أيام أسبوعياً. الاستمرارية أهم من المدّة — والتطبيق هيقولك كل يوم تعمل إيه.", icon: "⏱️" },
+    ],
+  },
   bands: {
     advanced: "متقدّم",
     veryGood: "جيّد جداً",
@@ -268,6 +340,7 @@ const en: Messages = {
   nav: {
     brand: "Cognitive Skills Platform",
     home: "Home",
+    journey: "My Journey",
     diagnostic: "Assessment",
     results: "Results",
     practice: "Practice",
@@ -282,7 +355,7 @@ const en: Messages = {
     heroTitle2: "the scientific, methodical way",
     heroSubtitle:
       "A platform that starts with a precise assessment of your cognitive skills, then builds you a personalized development path grounded in the most proven learning science — so you learn faster and think clearer.",
-    ctaStart: "Start the free assessment",
+    ctaStart: "Start your free journey",
     ctaPractice: "Try practice",
     howTitle: "How it works",
     stepLabel: (n) => `Step ${n}`,
@@ -379,6 +452,43 @@ const en: Messages = {
     notConfiguredBody:
       "The platform currently runs in guest mode (your progress is saved on this browser). To enable accounts and sync, add Supabase keys to .env.local.",
     backHome: "Back to home",
+  },
+  journey: {
+    title: "Your cognitive journey",
+    subtitle: "These are your structured steps to improve — follow them in order.",
+    streak: (n) => `🔥 ${n}-day streak`,
+    noStreak: "Start your daily streak today",
+    nextStepBadge: "Your next step",
+    assessTitle: "1) Assess your level",
+    assessDesc: "Start with a diagnostic that maps your strengths and weaknesses across the five dimensions.",
+    assessCta: "Start assessment",
+    assessDoneAt: (date) => `Last assessed: ${date}`,
+    practiceTitle: "2) Practice daily",
+    practiceDesc: "Train your weak spots with spaced repetition — the fastest path to improvement.",
+    dueToday: (n) => `You have ${n} question(s) due for review today`,
+    noDueToday: "Nothing due right now — you can practice or generate new exercises.",
+    practiceCta: "Start today's session",
+    cadence: "Recommended rhythm: 10–15 minutes a day, 4–5 days a week. Consistency matters more than session length.",
+    progressTitle: "3) Track your progress",
+    progressDesc: "See your level in each dimension and how you improve over time.",
+    progressCta: "See my results",
+    reassessTitle: "4) Re-assess",
+    reassessDesc: "Every two weeks, retake the assessment to measure real improvement.",
+    reassessIn: (days) => `Available in ${days} day(s)`,
+    reassessReady: "Time to re-assess — measure your progress!",
+    reassessCta: "Retake assessment",
+    done: "Done ✓",
+  },
+  onboarding: {
+    skip: "Skip",
+    next: "Next",
+    back: "Back",
+    start: "Let's start",
+    steps: [
+      { title: "Welcome 👋", body: "This is an evidence-based platform to develop your cognitive abilities — not a game. The goal is to learn faster and think clearer.", icon: "🎯" },
+      { title: "How it works", body: "1) Assess your level. 2) Practice your weak spots daily with spaced repetition. 3) Track your progress. 4) Re-assess every two weeks.", icon: "🔄" },
+      { title: "What's expected", body: "10–15 minutes a day, 4–5 days a week. Consistency beats duration — and the app tells you what to do each day.", icon: "⏱️" },
+    ],
   },
   bands: {
     advanced: "Advanced",

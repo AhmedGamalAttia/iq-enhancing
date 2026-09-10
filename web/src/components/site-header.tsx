@@ -41,7 +41,7 @@ export function SiteHeader() {
   }
 
   const nav = [
-    { href: "/", label: t.nav.home },
+    { href: "/journey", label: t.nav.journey },
     { href: "/diagnostic", label: t.nav.diagnostic },
     { href: "/results", label: t.nav.results },
     { href: "/practice", label: t.nav.practice },

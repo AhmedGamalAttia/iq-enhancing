@@ -7,6 +7,7 @@ import { SKILL_LIST } from "@/data/skills";
 import {
   getLatestDiagnostic,
   getReviewCards,
+  logPracticeToday,
   upsertReviewCard,
 } from "@/lib/data";
 import { isDue, newCardRecord, reviewCard } from "@/lib/fsrs";
@@ -72,6 +73,7 @@ export default function PracticePage() {
   }
 
   async function onNext(correct: boolean) {
+    logPracticeToday();
     const q = queueRef.current[pos];
     if (q && q.source !== "ai") {
       const existing =

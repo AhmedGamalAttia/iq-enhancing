@@ -26,7 +26,7 @@ export default function Home() {
           {h.heroSubtitle}
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <ButtonLink href="/diagnostic" size="lg">
+          <ButtonLink href="/journey" size="lg">
             {h.ctaStart}
           </ButtonLink>
           <ButtonLink href="/practice" variant="outline" size="lg">
@@ -108,7 +108,7 @@ export default function Home() {
         <h2 className="text-2xl font-bold md:text-3xl">{h.ctaTitle}</h2>
         <p className="mx-auto mt-3 max-w-xl text-fg-muted">{h.ctaSubtitle}</p>
         <div className="mt-6">
-          <ButtonLink href="/diagnostic" size="lg">
+          <ButtonLink href="/journey" size="lg">
             {h.ctaNow}
           </ButtonLink>
         </div>

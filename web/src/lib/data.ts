@@ -12,6 +12,7 @@ import type { DiagnosticResult, ReviewCardRecord } from "@/lib/types";
 
 const LS_DIAGNOSTIC = "cog:diagnostic:latest";
 const LS_CARDS = "cog:reviewcards";
+const LS_PRACTICE_DAYS = "cog:practicedays";
 
 function hasWindow() {
   return typeof window !== "undefined";
@@ -138,5 +139,34 @@ export async function upsertReviewCard(card: ReviewCardRecord): Promise<void> {
     if (idx >= 0) cards[idx] = card;
     else cards.push(card);
     localStorage.setItem(LS_CARDS, JSON.stringify(cards));
+  }
+}
+
+// ------------------------------- Practice-day log -------------------------------
+// A local (per-device) log of days the learner practiced, used for streaks.
+// Kept in localStorage for now; can move to Supabase later.
+
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+export function getPracticeDays(): string[] {
+  if (!hasWindow()) return [];
+  const raw = localStorage.getItem(LS_PRACTICE_DAYS);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as string[];
+  } catch {
+    return [];
+  }
+}
+
+export function logPracticeToday(): void {
+  if (!hasWindow()) return;
+  const days = getPracticeDays();
+  const today = todayKey();
+  if (!days.includes(today)) {
+    days.push(today);
+    localStorage.setItem(LS_PRACTICE_DAYS, JSON.stringify(days));
   }
 }
