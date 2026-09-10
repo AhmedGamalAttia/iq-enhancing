@@ -52,6 +52,29 @@ async function checkSupabase() {
   }
   await checkTable("diagnostic_results");
   await checkTable("review_cards");
+  await checkRpc();
+}
+
+async function checkRpc() {
+  const res = await fetch(`${url}/rest/v1/rpc/bump_ai_usage`, {
+    method: "POST",
+    headers: {
+      apikey: anon,
+      Authorization: `Bearer ${anon}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ p_identity: "setup-check", p_limit: 1000000 }),
+  });
+  if (res.ok) {
+    ok("AI rate-limit function installed");
+    return;
+  }
+  const body = await res.text();
+  if (res.status === 404 || /could not find the function|PGRST202/i.test(body)) {
+    warn("AI rate-limit function missing — run supabase/schema.sql (AI works unlimited until then)");
+  } else {
+    warn(`bump_ai_usage check: HTTP ${res.status}`);
+  }
 }
 
 async function checkGemini(key) {

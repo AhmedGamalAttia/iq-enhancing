@@ -29,6 +29,7 @@ export default function PracticePage() {
   const [genState, setGenState] = useState<"idle" | "loading">("idle");
   const [genSkill, setGenSkill] = useState<SkillKey>("logical");
   const [genDiff, setGenDiff] = useState(3);
+  const [genError, setGenError] = useState<string | null>(null);
 
   const queueRef = useRef<Question[]>([]);
   const cardMap = useRef<Map<string, ReviewCardRecord>>(new Map());
@@ -97,6 +98,7 @@ export default function PracticePage() {
 
   async function generateAI() {
     setGenState("loading");
+    setGenError(null);
     try {
       const res = await fetch("/api/generate-practice", {
         method: "POST",
@@ -111,6 +113,10 @@ export default function PracticePage() {
       const data = await res.json();
       if (!data.available) {
         setAiAvailable(false);
+        return;
+      }
+      if (data.error) {
+        setGenError(data.error);
         return;
       }
       const newQs: Question[] = data.questions ?? [];
@@ -227,6 +233,7 @@ export default function PracticePage() {
               {genState === "loading" ? t.practice.generating : t.practice.generate}
             </Button>
           </div>
+          {genError && <p className="mt-2 text-xs text-danger">{genError}</p>}
           <p className="mt-2 text-xs text-fg-faint">{t.practice.aiNote}</p>
         </Card>
       )}

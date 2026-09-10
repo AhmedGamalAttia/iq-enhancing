@@ -48,3 +48,52 @@ create policy "own review cards"
   for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- ------------------------- ai_usage (rate limiting) -------------------------
+-- Per-identity daily AI-call counter. Locked down (no direct access); only the
+-- security-definer function below touches it.
+create table if not exists public.ai_usage (
+  identity text not null,
+  day      date not null default current_date,
+  count    int  not null default 0,
+  primary key (identity, day)
+);
+
+alter table public.ai_usage enable row level security;
+-- (intentionally no policies: direct access is denied)
+
+-- Atomically increments today's counter for an identity and returns whether the
+-- call is allowed (i.e. was under the limit). Runs as owner to bypass RLS, and
+-- is callable by anon/authenticated so the server can enforce limits.
+create or replace function public.bump_ai_usage(p_identity text, p_limit int)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  cur int;
+begin
+  select count into cur from public.ai_usage
+    where identity = p_identity and day = current_date
+    for update;
+
+  if cur is null then
+    insert into public.ai_usage (identity, day, count)
+      values (p_identity, current_date, 1)
+      on conflict (identity, day) do update set count = public.ai_usage.count + 1;
+    return true;
+  end if;
+
+  if cur >= p_limit then
+    return false;
+  end if;
+
+  update public.ai_usage set count = count + 1
+    where identity = p_identity and day = current_date;
+  return true;
+end;
+$$;
+
+revoke all on function public.bump_ai_usage(text, int) from public;
+grant execute on function public.bump_ai_usage(text, int) to anon, authenticated;

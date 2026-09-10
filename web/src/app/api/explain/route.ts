@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { AIError, getAIProvider } from "@/lib/ai";
+import { checkAiRateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -31,6 +32,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
   const isEn = body.locale === "en";
+
+  const { ok } = await checkAiRateLimit(req);
+  if (!ok) {
+    return NextResponse.json(
+      {
+        available: true,
+        limited: true,
+        error: isEn
+          ? "You've reached today's AI limit. Sign in for more."
+          : "وصلت للحدّ اليومي للـ AI. سجّل دخول لمزيد.",
+      },
+      { status: 429 },
+    );
+  }
 
   const system = isEn
     ? "You are an expert cognitive coach. Explain clearly and concisely, in simple English, why the correct answer is right; if the learner's answer is wrong, point out the flaw in their thinking; then give one general rule for similar questions. No more than 5 sentences."

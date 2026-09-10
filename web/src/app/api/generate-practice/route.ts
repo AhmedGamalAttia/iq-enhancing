@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { AIError, getAIProvider } from "@/lib/ai";
+import { checkAiRateLimit } from "@/lib/ratelimit";
 import { SKILLS } from "@/data/skills";
 import { getMessages } from "@/i18n/messages";
 import { isLocale, type Locale } from "@/i18n/config";
@@ -36,6 +37,21 @@ export async function POST(req: Request) {
   const count = Math.min(5, Math.max(1, Math.round(body.count ?? 3)));
   const locale: Locale = isLocale(body.locale) ? body.locale : "ar";
   const isEn = locale === "en";
+
+  const { ok } = await checkAiRateLimit(req);
+  if (!ok) {
+    return NextResponse.json(
+      {
+        available: true,
+        limited: true,
+        error: isEn
+          ? "You've reached today's AI limit. Sign in for more."
+          : "وصلت للحدّ اليومي للـ AI. سجّل دخول لمزيد.",
+      },
+      { status: 429 },
+    );
+  }
+
   const meta = getMessages(locale).skills[skill];
 
   const system = isEn
