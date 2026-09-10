@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { challengeDayKey } from "@/lib/day";
 
 // Daily-challenge leaderboard. Signed-in players post their best score for the
 // day (public read for the board). Guests can play and view the board.
@@ -26,7 +27,7 @@ export function setDisplayName(name: string): void {
 }
 
 export function todayKey(): string {
-  return new Date().toISOString().slice(0, 10);
+  return challengeDayKey();
 }
 
 const LS_DAYS = "cog:daily:days";
@@ -59,8 +60,8 @@ export async function getCompletedDays(): Promise<string[]> {
   const supabase = createClient();
   const local = getLocalDays();
   if (supabase) {
-    const { data: u } = await supabase.auth.getUser();
-    const uid = u.user?.id;
+    const { data: s } = await supabase.auth.getSession();
+    const uid = s.session?.user?.id;
     if (uid) {
       const { data } = await supabase
         .from("daily_scores")
@@ -73,9 +74,14 @@ export async function getCompletedDays(): Promise<string[]> {
   return local;
 }
 
-/** Accuracy-primary, time as tiebreak, in a single sortable number. */
+/**
+ * Accuracy-primary, time as tiebreak, in a single sortable number.
+ * The time term MUST be capped below one accuracy step (10000), otherwise a
+ * slow perfect run loses to a fast wrong one (10/10 in 20 min used to rank
+ * below 9/10 in 30 s). Mirrors the server-side formula.
+ */
 export function dailyScore(correct: number, timeMs: number): number {
-  return correct * 10000 - Math.round(timeMs / 100);
+  return correct * 10000 - Math.min(9999, Math.round(timeMs / 100));
 }
 
 export interface DailyEntry {
@@ -86,15 +92,24 @@ export interface DailyEntry {
   user_id?: string;
 }
 
+export interface SubmitResult {
+  posted: boolean;
+  /** The score actually stored server-side (differs if today was already played). */
+  storedScore?: number;
+  /** False when a row for today already existed — one attempt per day. */
+  accepted?: boolean;
+}
+
 export async function submitDailyScore(entry: {
   correct: number;
   timeMs: number;
-  score: number;
-}): Promise<{ posted: boolean }> {
+}): Promise<SubmitResult> {
   const supabase = createClient();
   if (!supabase) return { posted: false };
-  const { data: u } = await supabase.auth.getUser();
-  let user = u.user;
+  // getSession() reads the local session; getUser() does a network round trip
+  // and returns null on a hiccup, which used to mis-detect signed-in users.
+  const { data: s } = await supabase.auth.getSession();
+  let user = s.session?.user ?? null;
   if (!user) {
     // Give guests a stable, real id (no email needed) so they can appear on the
     // board — far more robust than an IP. Requires "Anonymous sign-ins" enabled
@@ -104,36 +119,30 @@ export async function submitDailyScore(entry: {
     user = data.user;
   }
 
-  const date = todayKey();
   const name = (
     getDisplayName() ||
     user.email?.split("@")[0] ||
     "Player"
   ).slice(0, 24);
 
-  // Keep the best score for the day.
-  const { data: existing } = await supabase
-    .from("daily_scores")
-    .select("score")
-    .eq("date", date)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (existing && (existing.score as number) >= entry.score) {
-    return { posted: true };
-  }
+  // The server derives the date, recomputes the score and enforces the limits,
+  // so the client can no longer assert any of them (direct writes are revoked).
+  const { data, error } = await supabase.rpc("submit_daily_score", {
+    p_correct: entry.correct,
+    p_time_ms: entry.timeMs,
+    p_display_name: name,
+  });
+  if (error) return { posted: false };
 
-  await supabase.from("daily_scores").upsert(
-    {
-      date,
-      user_id: user.id,
-      display_name: name,
-      correct: entry.correct,
-      time_ms: entry.timeMs,
-      score: entry.score,
-    },
-    { onConflict: "date,user_id" },
-  );
-  return { posted: true };
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { accepted: boolean; stored_score: number }
+    | undefined;
+  if (!row) return { posted: false };
+  return {
+    posted: true,
+    storedScore: row.stored_score,
+    accepted: row.accepted,
+  };
 }
 
 export interface DailyResult {
@@ -174,8 +183,8 @@ export async function hasDoneTodayDaily(): Promise<boolean> {
 export async function getMyTodayScore(): Promise<DailyResult | null> {
   const supabase = createClient();
   if (!supabase) return null;
-  const { data: u } = await supabase.auth.getUser();
-  const uid = u.user?.id;
+  const { data: s } = await supabase.auth.getSession();
+  const uid = s.session?.user?.id;
   if (!uid) return null;
   const { data } = await supabase
     .from("daily_scores")
@@ -224,6 +233,9 @@ export async function getRank(
   const total = totalRes.count ?? 0;
   const better = betterRes.count ?? 0;
   const rank = better + 1;
-  const percentile = total > 0 ? Math.round(((total - rank) / total) * 100) : 0;
-  return { rank, total, percentile };
+  // Share of *other* players beaten: the only player of the day is 100%, and
+  // the value can never go negative (it used to read "better than -25%").
+  const percentile =
+    total > 1 ? Math.round(((total - rank) / (total - 1)) * 100) : 100;
+  return { rank, total, percentile: Math.max(0, Math.min(100, percentile)) };
 }

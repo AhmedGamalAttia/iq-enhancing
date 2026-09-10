@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { migrateLocalToAccount } from "@/lib/data";
 import { isSupabaseConfigured } from "@/lib/env";
 import { useI18n } from "@/i18n/context";
 import { Button, Card } from "@/components/ui";
@@ -28,8 +29,18 @@ export default function LoginPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({ email, password });
+        // A visitor who played the daily challenge already has an anonymous
+        // account. Upgrading it (instead of creating a new one) keeps their
+        // user id, so their leaderboard rows, streak and badges survive.
+        const { data: s } = await supabase.auth.getSession();
+        const isAnon =
+          (s.session?.user as { is_anonymous?: boolean } | undefined)
+            ?.is_anonymous === true;
+        const { error } = isAnon
+          ? await supabase.auth.updateUser({ email, password })
+          : await supabase.auth.signUp({ email, password });
         if (error) throw error;
+        await migrateLocalToAccount();
         setMessage(t.login.signupSuccess);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -37,6 +48,8 @@ export default function LoginPage() {
           password,
         });
         if (error) throw error;
+        // Move whatever the guest built up locally into the account.
+        await migrateLocalToAccount();
         router.push("/");
         router.refresh();
       }

@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { challengeDayKey } from "@/lib/day";
 import type { DiagnosticResult, ReviewCardRecord } from "@/lib/types";
 
 // Unified persistence layer.
@@ -19,58 +20,98 @@ function hasWindow() {
   return typeof window !== "undefined";
 }
 
-/** The current signed-in user id, or null in guest mode. */
+// localStorage throws (not just returns null) when site data is blocked or the
+// quota is full. An unguarded call used to freeze the practice session and hang
+// the journey page forever, so every access goes through these helpers.
+function lsGet(key: string): string | null {
+  if (!hasWindow()) return null;
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function lsSet(key: string, value: string): void {
+  if (!hasWindow()) return;
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* storage blocked or full — keep going, the session still works */
+  }
+}
+
+function lsReadJSON<T>(key: string, fallback: T): T {
+  const raw = lsGet(key);
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * The current signed-in user id, or null in guest mode.
+ * Uses the locally-cached session: `getUser()` always hits the network and
+ * returns null on any hiccup, which silently demoted signed-in users to guests
+ * and orphaned their results in localStorage.
+ */
 export async function getUserId(): Promise<string | null> {
   const supabase = createClient();
   if (!supabase) return null;
-  const { data } = await supabase.auth.getUser();
-  return data.user?.id ?? null;
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user?.id ?? null;
 }
 
 // ------------------------------- Diagnostic -------------------------------
+
+function saveDiagnosticLocally(result: DiagnosticResult): void {
+  lsSet(LS_DIAGNOSTIC, JSON.stringify(result));
+  const hist = readHistoryLS();
+  hist.push(result);
+  lsSet(LS_HISTORY, JSON.stringify(hist.slice(-30)));
+}
 
 export async function saveDiagnostic(result: DiagnosticResult): Promise<void> {
   const supabase = createClient();
   const userId = await getUserId();
 
+  // Always keep a local copy first: a 20-question assessment must never be lost
+  // to a rejected insert, an aborted request or a flaky connection.
+  saveDiagnosticLocally(result);
+
   if (supabase && userId) {
-    await supabase.from("diagnostic_results").insert({
+    const { error } = await supabase.from("diagnostic_results").insert({
       user_id: userId,
       finished_at: result.finishedAt,
       estimates: result.estimates,
       items: result.items,
     });
-    return;
-  }
-
-  if (hasWindow()) {
-    localStorage.setItem(LS_DIAGNOSTIC, JSON.stringify(result));
-    const hist = readHistoryLS();
-    hist.push(result);
-    localStorage.setItem(LS_HISTORY, JSON.stringify(hist.slice(-30)));
+    if (error) markPendingSync();
   }
 }
 
+// When a cloud write fails we remember that the local copy is ahead, so it can
+// be pushed on the next successful sign-in / migration pass.
+const LS_PENDING = "cog:pendingsync";
+function markPendingSync(): void {
+  lsSet(LS_PENDING, "1");
+}
+export function hasPendingSync(): boolean {
+  return lsGet(LS_PENDING) === "1";
+}
+
 function readHistoryLS(): DiagnosticResult[] {
-  if (!hasWindow()) return [];
-  const raw = localStorage.getItem(LS_HISTORY);
-  if (raw) {
-    try {
-      return JSON.parse(raw) as DiagnosticResult[];
-    } catch {
-      return [];
-    }
-  }
+  const hist = lsReadJSON<DiagnosticResult[] | null>(LS_HISTORY, null);
+  if (hist && hist.length > 0) return hist;
   // No history array yet — fall back to the single latest result if present.
-  const latest = localStorage.getItem(LS_DIAGNOSTIC);
-  if (latest) {
-    try {
-      return [JSON.parse(latest) as DiagnosticResult];
-    } catch {
-      return [];
-    }
-  }
-  return [];
+  const latest = lsReadJSON<DiagnosticResult | null>(LS_DIAGNOSTIC, null);
+  return latest ? [latest] : [];
+}
+
+function readCardsLS(): ReviewCardRecord[] {
+  return lsReadJSON<ReviewCardRecord[]>(LS_CARDS, []);
 }
 
 /** All past diagnostics, oldest → newest, for the progress-over-time view. */
@@ -116,17 +157,7 @@ export async function getLatestDiagnostic(): Promise<DiagnosticResult | null> {
     };
   }
 
-  if (hasWindow()) {
-    const raw = localStorage.getItem(LS_DIAGNOSTIC);
-    if (raw) {
-      try {
-        return JSON.parse(raw) as DiagnosticResult;
-      } catch {
-        return null;
-      }
-    }
-  }
-  return null;
+  return lsReadJSON<DiagnosticResult | null>(LS_DIAGNOSTIC, null);
 }
 
 // ------------------------------- Review cards -------------------------------
@@ -149,25 +180,22 @@ export async function getReviewCards(): Promise<ReviewCardRecord[]> {
     }));
   }
 
-  if (hasWindow()) {
-    const raw = localStorage.getItem(LS_CARDS);
-    if (raw) {
-      try {
-        return JSON.parse(raw) as ReviewCardRecord[];
-      } catch {
-        return [];
-      }
-    }
-  }
-  return [];
+  return readCardsLS();
 }
 
 export async function upsertReviewCard(card: ReviewCardRecord): Promise<void> {
   const supabase = createClient();
   const userId = await getUserId();
 
+  // Always mirror locally so scheduling survives a failed or offline write.
+  const cards = readCardsLS();
+  const idx = cards.findIndex((c) => c.questionId === card.questionId);
+  if (idx >= 0) cards[idx] = card;
+  else cards.push(card);
+  lsSet(LS_CARDS, JSON.stringify(cards));
+
   if (supabase && userId) {
-    await supabase.from("review_cards").upsert(
+    const { error } = await supabase.from("review_cards").upsert(
       {
         user_id: userId,
         question_id: card.questionId,
@@ -178,15 +206,7 @@ export async function upsertReviewCard(card: ReviewCardRecord): Promise<void> {
       },
       { onConflict: "user_id,question_id" },
     );
-    return;
-  }
-
-  if (hasWindow()) {
-    const cards = await getReviewCards();
-    const idx = cards.findIndex((c) => c.questionId === card.questionId);
-    if (idx >= 0) cards[idx] = card;
-    else cards.push(card);
-    localStorage.setItem(LS_CARDS, JSON.stringify(cards));
+    if (error) markPendingSync();
   }
 }
 
@@ -198,54 +218,89 @@ const LS_SEEN = "cog:seenquestions";
 const SEEN_CAP = 150;
 
 export function getRecentQuestionIds(): string[] {
-  if (!hasWindow()) return [];
-  try {
-    return JSON.parse(localStorage.getItem(LS_SEEN) ?? "[]") as string[];
-  } catch {
-    return [];
-  }
+  return lsReadJSON<string[]>(LS_SEEN, []);
 }
 
 export function addRecentQuestionIds(ids: string[]): void {
-  if (!hasWindow() || ids.length === 0) return;
-  try {
-    const merged = [...getRecentQuestionIds(), ...ids];
-    // keep the most recent, de-duplicated
-    const unique = [...new Set(merged.reverse())].reverse();
-    localStorage.setItem(
-      LS_SEEN,
-      JSON.stringify(unique.slice(-SEEN_CAP)),
-    );
-  } catch {
-    /* ignore */
-  }
+  if (ids.length === 0) return;
+  const merged = [...getRecentQuestionIds(), ...ids];
+  // keep the most recent, de-duplicated
+  const unique = [...new Set(merged.reverse())].reverse();
+  lsSet(LS_SEEN, JSON.stringify(unique.slice(-SEEN_CAP)));
 }
 
 // ------------------------------- Practice-day log -------------------------------
 // A local (per-device) log of days the learner practiced, used for streaks.
 // Kept in localStorage for now; can move to Supabase later.
 
-function todayKey(): string {
-  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-}
-
 export function getPracticeDays(): string[] {
-  if (!hasWindow()) return [];
-  const raw = localStorage.getItem(LS_PRACTICE_DAYS);
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw) as string[];
-  } catch {
-    return [];
-  }
+  return lsReadJSON<string[]>(LS_PRACTICE_DAYS, []);
 }
 
 export function logPracticeToday(): void {
-  if (!hasWindow()) return;
   const days = getPracticeDays();
-  const today = todayKey();
+  const today = challengeDayKey();
   if (!days.includes(today)) {
     days.push(today);
-    localStorage.setItem(LS_PRACTICE_DAYS, JSON.stringify(days));
+    lsSet(LS_PRACTICE_DAYS, JSON.stringify(days.slice(-400)));
+  }
+}
+
+// ------------------------------- Guest → account migration -------------------------------
+
+const LS_MIGRATED = "cog:migrated";
+
+/**
+ * Uploads progress a guest built up locally so signing in doesn't orphan it.
+ * Runs once per device after a successful sign-in.
+ */
+export async function migrateLocalToAccount(): Promise<void> {
+  const supabase = createClient();
+  const userId = await getUserId();
+  if (!supabase || !userId) return;
+  if (lsGet(LS_MIGRATED) === "1" && !hasPendingSync()) return;
+
+  try {
+    const history = readHistoryLS();
+    if (history.length > 0) {
+      const { data: existing } = await supabase
+        .from("diagnostic_results")
+        .select("finished_at")
+        .eq("user_id", userId);
+      const known = new Set(
+        (existing ?? []).map((r) => String(r.finished_at)),
+      );
+      const rows = history
+        .filter((h) => !known.has(h.finishedAt))
+        .map((h) => ({
+          user_id: userId,
+          finished_at: h.finishedAt,
+          estimates: h.estimates,
+          items: h.items ?? [],
+        }));
+      if (rows.length > 0) {
+        await supabase.from("diagnostic_results").insert(rows);
+      }
+    }
+
+    const cards = readCardsLS();
+    if (cards.length > 0) {
+      await supabase.from("review_cards").upsert(
+        cards.map((c) => ({
+          user_id: userId,
+          question_id: c.questionId,
+          skill: c.skill,
+          fsrs: c.fsrs,
+          due: c.due,
+          updated_at: c.updatedAt,
+        })),
+        { onConflict: "user_id,question_id" },
+      );
+    }
+
+    lsSet(LS_MIGRATED, "1");
+    lsSet(LS_PENDING, "0");
+  } catch {
+    /* leave the local copy in place; it will be retried next sign-in */
   }
 }

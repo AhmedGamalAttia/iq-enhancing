@@ -64,6 +64,9 @@ export default function DailyPage() {
   const items = useRef<AbstractItem[]>([]);
   const startAt = useRef(0);
   const correct = useRef(0);
+  const hiddenMs = useRef(0);
+  const hiddenAt = useRef(0);
+  const submitting = useRef(false);
 
   useEffect(() => {
     setName(getDisplayName());
@@ -96,16 +99,36 @@ export default function DailyPage() {
     };
   }, []);
 
+  // The clock only runs while the tab is visible, so switching away (or being
+  // interrupted) doesn't ruin the run — and can't be used to farm a bad time.
+  const activeMs = () => Date.now() - startAt.current - hiddenMs.current;
+
   useEffect(() => {
     if (phase !== "running") return;
-    const id = setInterval(() => setElapsed(Date.now() - startAt.current), 250);
-    return () => clearInterval(id);
+    const id = setInterval(() => setElapsed(activeMs()), 250);
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        hiddenAt.current = Date.now();
+      } else if (hiddenAt.current) {
+        hiddenMs.current += Date.now() - hiddenAt.current;
+        hiddenAt.current = 0;
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
   function start() {
     items.current = generateDailyChallenge(dateSeedNumber());
     correct.current = 0;
     startAt.current = Date.now();
+    hiddenMs.current = 0;
+    hiddenAt.current = 0;
     setElapsed(0);
     setStep(0);
     setPhase("running");
@@ -122,7 +145,10 @@ export default function DailyPage() {
   }
 
   async function finish() {
-    const timeMs = Date.now() - startAt.current;
+    if (submitting.current) return; // a double tap must not submit twice
+    submitting.current = true;
+
+    const timeMs = activeMs();
     const total = items.current.length;
     const c = correct.current;
     const score = dailyScore(c, timeMs);
@@ -132,27 +158,36 @@ export default function DailyPage() {
     setElapsed(timeMs);
     setPhase("done");
     logPracticeToday();
-
-    const { posted } = await submitDailyScore({ correct: c, timeMs, score });
-    setPosted(posted);
-    const [b, r] = await Promise.all([getLeaderboard(), getRank(score)]);
-    setBoard(b);
-    if (posted) setRank(r);
-
-    // Streak + badges.
     logDailyToday();
-    const days = await getCompletedDays();
-    const s = computeStreak(days);
-    setStreak(s);
-    const earnedNow = evaluateBadges({
-      correct: c,
-      total,
-      timeMs,
-      streak: s,
-      rank: posted && r ? r.rank : null,
-    });
-    setNewBadges(addEarnedBadges(earnedNow));
-    setEarnedBadges(getEarnedBadges());
+
+    try {
+      const sub = await submitDailyScore({ correct: c, timeMs });
+      setPosted(sub.posted);
+      // Rank against the score the server actually stored.
+      const rankScore = sub.storedScore ?? score;
+      const [b, r] = await Promise.all([
+        getLeaderboard(),
+        getRank(rankScore),
+      ]);
+      setBoard(b);
+      if (sub.posted) setRank(r);
+
+      const days = await getCompletedDays();
+      const s = computeStreak(days);
+      setStreak(s);
+      const earnedNow = evaluateBadges({
+        correct: c,
+        total,
+        timeMs,
+        streak: s,
+        rank: sub.posted && r ? r.rank : null,
+      });
+      setNewBadges(addEarnedBadges(earnedNow));
+      setEarnedBadges(getEarnedBadges());
+    } catch {
+      setPosted(false);
+      setStreak(computeStreak(await getCompletedDays().catch(() => [])));
+    }
   }
 
   const current = items.current[step];

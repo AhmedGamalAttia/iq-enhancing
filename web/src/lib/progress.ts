@@ -1,30 +1,29 @@
 // Progress helpers for the journey hub.
 
 import { MIN_RELIABLE_ITEMS } from "@/lib/diagnostic";
-
-function dayKey(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
+import { challengeDayKey, previousDayKey } from "@/lib/day";
 
 /**
- * Current consecutive-day practice streak. Counts back from today (or from
- * yesterday if today hasn't been practiced yet, so the streak survives until
- * end of day).
+ * Current consecutive-day streak. Counts back from today (or from yesterday if
+ * today hasn't been practiced yet, so the streak survives until end of day).
+ * Days are calendar keys in the challenge timezone, and stepping back is exact
+ * calendar arithmetic — mixing UTC formatting with local date maths used to
+ * miscount around midnight and DST.
  */
 export function computeStreak(days: string[]): number {
   if (days.length === 0) return 0;
   const set = new Set(days);
-  const cursor = new Date();
 
-  if (!set.has(dayKey(cursor))) {
-    cursor.setDate(cursor.getDate() - 1);
-    if (!set.has(dayKey(cursor))) return 0;
+  let cursor = challengeDayKey();
+  if (!set.has(cursor)) {
+    cursor = previousDayKey(cursor);
+    if (!set.has(cursor)) return 0;
   }
 
   let streak = 0;
-  while (set.has(dayKey(cursor))) {
+  while (set.has(cursor)) {
     streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
+    cursor = previousDayKey(cursor);
   }
   return streak;
 }

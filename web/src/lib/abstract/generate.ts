@@ -7,6 +7,7 @@ import type {
   ShapeKind,
   Size,
 } from "./types";
+import { challengeDaySeed } from "@/lib/day";
 
 // ---------------------------------------------------------------------------
 // Procedural generator for culture-fair abstract-reasoning items.
@@ -320,9 +321,13 @@ export function typeForStep(step: number): AbstractType {
   return ROTATION[step % ROTATION.length];
 }
 
-/** A stable numeric seed for a date (YYYYMMDD). */
+/**
+ * A stable numeric seed for a day (YYYYMMDD), from the single app-wide day
+ * definition so the puzzles roll over at exactly the same instant as the
+ * leaderboard row, the one-a-day gate and the streak.
+ */
 export function dateSeedNumber(d: Date = new Date()): number {
-  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  return challengeDaySeed(d);
 }
 
 // Fixed difficulty ramp so the daily challenge is a standardized, comparable set.
