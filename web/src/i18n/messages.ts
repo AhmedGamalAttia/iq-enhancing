@@ -145,6 +145,9 @@ export interface Messages {
     title: string;
     intro: string;
     instruction: (n: number) => string;
+    howTitle: string;
+    exampleCaption: (n: number) => string;
+    levelTag: (n: number) => string;
     chooseLevel: string;
     level: (n: number) => string;
     start: string;
@@ -384,9 +387,17 @@ const ar: Messages = {
   },
   nback: {
     title: "تمرين الذاكرة العاملة (n-back)",
-    intro: "هيضيء مربّع في الشبكة، واحد ورا التاني. مهمتك تفتكر مواقعهم.",
+    intro: "بيضيء مربّع في شبكة ٣×٣، واحد ورا التاني. مهمتك تتابع أماكنهم في دماغك.",
     instruction: (n) =>
-      `اضغط «تطابق» لما موقع المربّع الحالي يكون نفس موقع اللي ظهر قبله بـ ${n} خطوات.`,
+      n === 1
+        ? "اضغط «تطابق» لما المربّع الحالي يضيء في نفس مكان اللي قبله مباشرةً."
+        : `اضغط «تطابق» لما المربّع الحالي يضيء في نفس مكان اللي ظهر قبله بـ ${n} مربّعات.`,
+    howTitle: "إزاي تلعب؟",
+    exampleCaption: (n) =>
+      n === 1
+        ? "المربّع الأخير في نفس مكان اللي قبله مباشرةً → اضغط «تطابق»!"
+        : `المربّع الأخير في نفس مكان اللي قبله بـ ${n} → اضغط «تطابق»!`,
+    levelTag: (n) => (n === 1 ? "سهل" : n === 2 ? "متوسط" : "صعب"),
     chooseLevel: "اختر المستوى:",
     level: (n) => `${n}-back`,
     start: "ابدأ",
@@ -666,9 +677,17 @@ const en: Messages = {
   },
   nback: {
     title: "Working-memory task (n-back)",
-    intro: "A square will light up in the grid, one at a time. Your job is to remember their positions.",
+    intro: "A square lights up in a 3×3 grid, one at a time. Your job is to track their positions in your head.",
     instruction: (n) =>
-      `Press “Match” when the current square is in the same position as the one shown ${n} steps back.`,
+      n === 1
+        ? "Press “Match” when the current square is in the same position as the one right before it."
+        : `Press “Match” when the current square is in the same position as the one shown ${n} squares back.`,
+    howTitle: "How to play",
+    exampleCaption: (n) =>
+      n === 1
+        ? "The last square is in the same position as the one right before it → press “Match”!"
+        : `The last square is in the same position as the one ${n} back → press “Match”!`,
+    levelTag: (n) => (n === 1 ? "Easy" : n === 2 ? "Medium" : "Hard"),
     chooseLevel: "Choose a level:",
     level: (n) => `${n}-back`,
     start: "Start",

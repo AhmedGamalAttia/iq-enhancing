@@ -37,7 +37,7 @@ function genSequence(n: number, trials: number): number[] {
 export default function NBackPage() {
   const { t } = useI18n();
   const [phase, setPhase] = useState<Phase>("intro");
-  const [nLevel, setNLevel] = useState(2);
+  const [nLevel, setNLevel] = useState(1);
   const [activeCell, setActiveCell] = useState<number | null>(null);
   const [index, setIndex] = useState(0);
   const [countdown, setCountdown] = useState(3);
@@ -49,7 +49,7 @@ export default function NBackPage() {
   const idxRef = useRef(0);
   const respondedRef = useRef(false);
   const statsRef = useRef<Stats>({ hits: 0, misses: 0, fa: 0, cr: 0 });
-  const nRef = useRef(2);
+  const nRef = useRef(1);
   const phaseRef = useRef<Phase>("intro");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -181,25 +181,36 @@ export default function NBackPage() {
           <div className="mb-4 text-5xl">🧠</div>
           <h1 className="mb-2 text-2xl font-bold">{t.nback.title}</h1>
           <p className="mb-2 leading-relaxed text-fg-muted">{t.nback.intro}</p>
-          <p className="mb-6 leading-relaxed text-fg">
+          <p className="mb-4 leading-relaxed text-fg">
             {t.nback.instruction(nLevel)}
           </p>
 
+          {/* How to play — a worked visual example */}
+          <div className="mb-6 rounded-xl border border-border-soft bg-surface-2/50 p-4">
+            <p className="mb-3 text-sm font-bold">👀 {t.nback.howTitle}</p>
+            <NBackExample n={nLevel} />
+            <p className="mt-3 text-xs leading-relaxed text-fg-muted">
+              {t.nback.exampleCaption(nLevel)}
+            </p>
+          </div>
+
           <p className="mb-2 text-sm font-semibold">{t.nback.chooseLevel}</p>
           <div className="mb-4 flex justify-center gap-2">
-            {[2, 3].map((n) => (
+            {[1, 2, 3].map((n) => (
               <button
                 key={n}
-                dir="ltr"
                 onClick={() => setNLevel(n)}
                 className={cn(
-                  "rounded-xl border px-5 py-2 text-sm font-bold transition-colors",
+                  "flex flex-col items-center rounded-xl border px-4 py-2 text-sm font-bold transition-colors",
                   nLevel === n
                     ? "border-brand bg-brand-soft text-brand"
                     : "border-border text-fg-muted hover:border-brand/50",
                 )}
               >
-                {t.nback.level(n)}
+                <span dir="ltr">{t.nback.level(n)}</span>
+                <span className="text-[10px] font-normal text-fg-faint">
+                  {t.nback.levelTag(n)}
+                </span>
               </button>
             ))}
           </div>
@@ -307,6 +318,57 @@ function Stat({
     <div className="rounded-xl border border-border-soft bg-surface-2/50 p-3">
       <div className={cn("text-2xl font-bold", tone)}>{value}</div>
       <div className="text-xs text-fg-faint">{label}</div>
+    </div>
+  );
+}
+
+// A tiny static illustration: a row of 3×3 grids where the last square matches
+// the one n steps back (highlighted), teaching the rule at a glance.
+function NBackExample({ n }: { n: number }) {
+  const base = [1, 5, 7, 3, 0];
+  const pos = [...base];
+  pos[4] = pos[4 - n];
+  const partner = 4 - n;
+
+  return (
+    <div dir="ltr" className="flex items-end justify-center gap-2">
+      {pos.map((p, idx) => {
+        const isCurrent = idx === 4;
+        const isPartner = idx === partner;
+        return (
+          <div key={idx} className="flex flex-col items-center gap-1">
+            <div
+              className={cn(
+                "grid grid-cols-3 gap-[2px] rounded-md border p-1",
+                isCurrent
+                  ? "border-brand bg-brand-soft"
+                  : isPartner
+                    ? "border-accent"
+                    : "border-border-soft",
+              )}
+            >
+              {Array.from({ length: 9 }).map((_, c) => (
+                <span
+                  key={c}
+                  className={cn(
+                    "h-2.5 w-2.5 rounded-[2px]",
+                    c === p
+                      ? isCurrent
+                        ? "bg-brand"
+                        : isPartner
+                          ? "bg-accent"
+                          : "bg-fg"
+                      : "bg-surface-2",
+                  )}
+                />
+              ))}
+            </div>
+            <span className="h-4 text-xs">
+              {isCurrent ? "✋" : isPartner ? "↑" : ""}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
