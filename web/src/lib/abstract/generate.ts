@@ -30,8 +30,22 @@ const FILLS: Fill[] = ["solid", "outline"];
 const SIZES: Size[] = [1, 2, 3];
 const COUNTS = [1, 2, 3, 4];
 
+// Swappable RNG so a daily challenge can be generated deterministically from a
+// date seed (everyone gets the same puzzles), while normal play stays random.
+let RNG: () => number = Math.random;
+
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function randInt(n: number): number {
-  return Math.floor(Math.random() * n);
+  return Math.floor(RNG() * n);
 }
 function pick<T>(arr: T[]): T {
   return arr[randInt(arr.length)];
@@ -268,14 +282,26 @@ function genMatrix(d: number): AbstractItem {
 }
 
 // ------------------------------- dispatch -------------------------------
-export function generateAbstractItem(
-  type: AbstractType,
-  difficulty: number,
-): AbstractItem {
-  const d = Math.min(10, Math.max(1, Math.round(difficulty)));
+function genByType(type: AbstractType, d: number): AbstractItem {
   if (type === "sequence") return genSequence(d);
   if (type === "oddone") return genOddone(d);
   return genMatrix(d);
+}
+
+export function generateAbstractItem(
+  type: AbstractType,
+  difficulty: number,
+  seed?: number,
+): AbstractItem {
+  const d = Math.min(10, Math.max(1, Math.round(difficulty)));
+  if (seed === undefined) return genByType(type, d);
+  const prev = RNG;
+  RNG = mulberry32(seed >>> 0);
+  try {
+    return genByType(type, d);
+  } finally {
+    RNG = prev;
+  }
 }
 
 const ROTATION: AbstractType[] = ["sequence", "matrix", "oddone"];
@@ -283,4 +309,26 @@ const ROTATION: AbstractType[] = ["sequence", "matrix", "oddone"];
 /** Pick a type by step index (interleaves the three patterns). */
 export function typeForStep(step: number): AbstractType {
   return ROTATION[step % ROTATION.length];
+}
+
+/** A stable numeric seed for a date (YYYYMMDD). */
+export function dateSeedNumber(d: Date = new Date()): number {
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
+// Fixed difficulty ramp so the daily challenge is a standardized, comparable set.
+const DAILY_DIFFICULTIES = [2, 3, 4, 5, 5, 6, 7, 7, 8, 9];
+
+/** The same challenge for everyone on a given day (seeded, non-adaptive). */
+export function generateDailyChallenge(
+  dateNum: number,
+  count = 10,
+): AbstractItem[] {
+  const items: AbstractItem[] = [];
+  for (let i = 0; i < count; i++) {
+    const type = typeForStep(i);
+    const diff = DAILY_DIFFICULTIES[i % DAILY_DIFFICULTIES.length];
+    items.push(generateAbstractItem(type, diff, dateNum * 100 + i));
+  }
+  return items;
 }

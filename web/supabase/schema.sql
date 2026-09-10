@@ -97,3 +97,32 @@ $$;
 
 revoke all on function public.bump_ai_usage(text, int) from public;
 grant execute on function public.bump_ai_usage(text, int) to anon, authenticated;
+
+-- ------------------------- daily_scores (leaderboard) -------------------------
+create table if not exists public.daily_scores (
+  date         date not null,
+  user_id      uuid not null references auth.users (id) on delete cascade,
+  display_name text not null default 'Player',
+  correct      int  not null,
+  time_ms      int  not null,
+  score        int  not null,
+  created_at   timestamptz not null default now(),
+  primary key (date, user_id)
+);
+
+create index if not exists daily_scores_board_idx
+  on public.daily_scores (date, score desc);
+
+alter table public.daily_scores enable row level security;
+
+-- Anyone may read the leaderboard...
+drop policy if exists "read leaderboard" on public.daily_scores;
+create policy "read leaderboard" on public.daily_scores for select using (true);
+
+-- ...but a player may only write their own row.
+drop policy if exists "own daily score" on public.daily_scores;
+create policy "own daily score"
+  on public.daily_scores
+  for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

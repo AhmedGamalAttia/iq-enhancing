@@ -186,6 +186,28 @@ export interface Messages {
     again: string;
     toPractice: string;
   };
+  daily: {
+    title: string;
+    cardHint: string;
+    intro: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    start: string;
+    elapsed: string;
+    progress: (i: number, total: number) => string;
+    doneTitle: string;
+    correctLabel: string;
+    timeLabel: string;
+    scoreLabel: string;
+    rank: (rank: number, total: number) => string;
+    percentile: (p: number) => string;
+    leaderboardTitle: string;
+    you: string;
+    guestNote: string;
+    emptyBoard: string;
+    comeBack: string;
+    toJourney: string;
+  };
   bands: {
     advanced: string;
     veryGood: string;
@@ -400,6 +422,28 @@ const ar: Messages = {
     accuracy: (c, t) => `أجبت صح على ${c} من ${t}`,
     again: "مرة أخرى",
     toPractice: "رجوع للتدريب",
+  },
+  daily: {
+    title: "تحدّي اليوم",
+    cardHint: "نفس الأسئلة للجميع اليوم — الأسرع والأدقّ يتصدّر",
+    intro: "١٠ أسئلة مجرّدة، نفس الأسئلة لكل اللاعبين النهاردة. حُلّها بأسرع وأدقّ ما يمكن — والوقت بيجري!",
+    nameLabel: "اسمك في اللوحة",
+    namePlaceholder: "لاعب",
+    start: "ابدأ التحدّي",
+    elapsed: "الوقت",
+    progress: (i, total) => `${i} / ${total}`,
+    doneTitle: "خلّصت تحدّي النهاردة! 🎉",
+    correctLabel: "إجابات صحيحة",
+    timeLabel: "الوقت الكلّي",
+    scoreLabel: "النقاط",
+    rank: (rank, total) => `ترتيبك ${rank} من ${total}`,
+    percentile: (p) => `أفضل من ${p}% من لاعبي اليوم`,
+    leaderboardTitle: "متصدّرو اليوم",
+    you: "أنت",
+    guestNote: "سجّل دخول عشان تدخل لوحة المتصدّرين.",
+    emptyBoard: "كن أول المتصدّرين اليوم!",
+    comeBack: "ارجع بكرة لتحدّي جديد.",
+    toJourney: "رجوع لرحلتي",
   },
   bands: {
     advanced: "متقدّم",
@@ -646,6 +690,28 @@ const en: Messages = {
     accuracy: (c, t) => `You answered ${c} of ${t} correctly`,
     again: "Play again",
     toPractice: "Back to practice",
+  },
+  daily: {
+    title: "Daily Challenge",
+    cardHint: "Same puzzles for everyone today — fastest and most accurate wins",
+    intro: "10 abstract puzzles — the same set for every player today. Solve them as fast and accurately as you can. The clock is running!",
+    nameLabel: "Your name on the board",
+    namePlaceholder: "Player",
+    start: "Start the challenge",
+    elapsed: "Time",
+    progress: (i, total) => `${i} / ${total}`,
+    doneTitle: "You finished today's challenge! 🎉",
+    correctLabel: "Correct",
+    timeLabel: "Total time",
+    scoreLabel: "Points",
+    rank: (rank, total) => `Rank ${rank} of ${total}`,
+    percentile: (p) => `Better than ${p}% of today's players`,
+    leaderboardTitle: "Today's leaders",
+    you: "You",
+    guestNote: "Sign in to join the leaderboard.",
+    emptyBoard: "Be the first on today's board!",
+    comeBack: "Come back tomorrow for a new challenge.",
+    toJourney: "Back to my journey",
   },
   bands: {
     advanced: "Advanced",

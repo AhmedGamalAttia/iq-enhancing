@@ -83,6 +83,16 @@ export default function JourneyPage() {
         </Badge>
       </header>
 
+      <Card className="mb-4 flex items-center justify-between gap-3 border-brand/30 bg-brand-soft p-4">
+        <div>
+          <p className="font-bold">🏆 {t.daily.title}</p>
+          <p className="text-xs text-fg-faint">{t.daily.cardHint}</p>
+        </div>
+        <ButtonLink href="/daily" size="sm">
+          {t.daily.start}
+        </ButtonLink>
+      </Card>
+
       {loading ? (
         <p className="py-10 text-center text-fg-muted">{t.results.loading}</p>
       ) : (

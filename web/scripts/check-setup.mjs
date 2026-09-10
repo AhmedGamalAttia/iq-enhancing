@@ -52,6 +52,7 @@ async function checkSupabase() {
   }
   await checkTable("diagnostic_results");
   await checkTable("review_cards");
+  await checkTable("daily_scores");
   await checkRpc();
 }
 

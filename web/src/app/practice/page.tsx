@@ -153,6 +153,16 @@ export default function PracticePage() {
         )}
       </header>
 
+      <Card className="mb-3 flex items-center justify-between gap-3 border-brand/30 bg-brand-soft p-4">
+        <div>
+          <p className="font-bold">🏆 {t.daily.title}</p>
+          <p className="text-xs text-fg-faint">{t.daily.cardHint}</p>
+        </div>
+        <ButtonLink href="/daily" size="sm">
+          {t.daily.start}
+        </ButtonLink>
+      </Card>
+
       <Card className="mb-3 flex items-center justify-between gap-3 p-4">
         <div>
           <p className="font-bold">🧠 {t.nback.title}</p>
