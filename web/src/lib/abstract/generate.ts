@@ -142,7 +142,7 @@ function cycleFor(attr: Attr, len?: number): (number | string)[] {
 
 function genSequence(d: number): AbstractItem {
   const L = 4;
-  const numProg = d <= 3 ? 1 : 2;
+  const numProg = d <= 3 ? 1 : d <= 7 ? 2 : 3; // expert ceiling: 3 attrs
   const progAttrs = pickN<Attr>(["rotation", "fill", "size", "count"], numProg);
 
   const base = randomDesc();
@@ -216,8 +216,11 @@ function matrixCycle(attr: Attr): (number | string)[] {
   return pickN([...KINDS], 3);
 }
 
+type Axis = "row" | "col" | "diag";
+const AXES: Axis[] = ["row", "col", "diag"];
+
 function genMatrix(d: number): AbstractItem {
-  const numGov = d <= 4 ? 1 : 2;
+  const numGov = d <= 4 ? 1 : d <= 7 ? 2 : 3; // expert ceiling: 3 governed attrs
   const govAttrs = pickN<Attr>(["rotation", "fill", "size", "count"], numGov);
 
   const base = randomDesc();
@@ -226,16 +229,15 @@ function genMatrix(d: number): AbstractItem {
 
   const gov = govAttrs.map((a, idx) => ({
     a,
-    axis: (numGov === 2 ? (idx === 0 ? "row" : "col") : pick(["row", "col"])) as
-      | "row"
-      | "col",
+    // 1 governed attr → random axis; 2+ → row, col, then diagonal (r+c)
+    axis: (numGov >= 2 ? AXES[idx] : pick<Axis>(["row", "col"])) as Axis,
     cyc: matrixCycle(a),
   }));
 
   const descAt = (r: number, c: number): Desc => {
     const desc = { ...base };
     for (const g of gov) {
-      const idx = g.axis === "row" ? r : c;
+      const idx = g.axis === "row" ? r : g.axis === "col" ? c : r + c;
       setAttr(desc, g.a, g.cyc[idx % g.cyc.length]);
     }
     return desc;

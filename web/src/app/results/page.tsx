@@ -124,6 +124,10 @@ export default function ResultsPage() {
       )}
 
       <ProgressTrend history={history} />
+
+      <p className="mt-6 text-center text-xs leading-relaxed text-fg-faint">
+        {t.diagnostic.notIQ}
+      </p>
     </div>
   );
 }

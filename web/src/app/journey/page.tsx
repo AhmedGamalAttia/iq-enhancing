@@ -120,6 +120,14 @@ export default function JourneyPage() {
               {dueCount > 0 ? t.journey.dueToday(dueCount) : t.journey.noDueToday}
             </p>
             <ButtonLink href="/practice">{t.journey.practiceCta}</ButtonLink>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <ButtonLink href="/abstract" variant="outline" size="sm">
+                ◈ {t.abstract.title}
+              </ButtonLink>
+              <ButtonLink href="/nback" variant="outline" size="sm">
+                🧠 {t.nback.title}
+              </ButtonLink>
+            </div>
             <p className="mt-3 text-xs leading-relaxed text-fg-faint">
               {t.journey.cadence}
             </p>
